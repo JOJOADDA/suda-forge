@@ -1,0 +1,150 @@
+{
+  "base": "http://127.0.0.1:18080",
+  "project": "pressure-live-1786561384",
+  "reports": [
+    {
+      "label": "loop_start_1x",
+      "count": 1,
+      "workers": 1,
+      "statuses": {
+        "202": 1
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 32.06,
+        "median": 32.06,
+        "p95": 32.06,
+        "max": 32.06
+      }
+    },
+    {
+      "label": "loop_status_256c",
+      "count": 256,
+      "workers": 32,
+      "statuses": {
+        "200": 256
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 0.81,
+        "median": 9.17,
+        "p95": 18.08,
+        "max": 26.27
+      }
+    },
+    {
+      "label": "loop_duplicate_start_256c",
+      "count": 256,
+      "workers": 32,
+      "statuses": {
+        "202": 256
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 1.92,
+        "median": 9.72,
+        "p95": 21.47,
+        "max": 33.71
+      }
+    },
+    {
+      "label": "loop_malformed_256c",
+      "count": 256,
+      "workers": 32,
+      "statuses": {
+        "400": 256
+      },
+      "errors": 256,
+      "sample_errors": [
+        "{\"error\":\"invalid character 'n' looking for beginning of object key string\"}\n",
+        "{\"error\":\"invalid character 'n' looking for beginning of object key string\"}\n",
+        "{\"error\":\"invalid character 'n' looking for beginning of object key string\"}\n"
+      ],
+      "latency_ms": {
+        "min": 1.81,
+        "median": 9.08,
+        "p95": 21.81,
+        "max": 31.82
+      }
+    },
+    {
+      "label": "verification_valid_256c",
+      "count": 256,
+      "workers": 32,
+      "statuses": {
+        "201": 256
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 19.77,
+        "median": 70.88,
+        "p95": 124.32,
+        "max": 155.33
+      }
+    },
+    {
+      "label": "verification_malformed_256c",
+      "count": 256,
+      "workers": 32,
+      "statuses": {
+        "400": 256
+      },
+      "errors": 256,
+      "sample_errors": [
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"invalid character 'n' looking for beginning of object key string\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"invalid character 'n' looking for beginning of object key string\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"invalid character 'n' looking for beginning of object key string\"}}\n"
+      ],
+      "latency_ms": {
+        "min": 1.14,
+        "median": 8.93,
+        "p95": 23.08,
+        "max": 28.56
+      }
+    },
+    {
+      "label": "verification_missing_id_256c",
+      "count": 256,
+      "workers": 32,
+      "statuses": {
+        "400": 256
+      },
+      "errors": 256,
+      "sample_errors": [
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"project_id is required\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"project_id is required\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"project_id is required\"}}\n"
+      ],
+      "latency_ms": {
+        "min": 1.58,
+        "median": 10.36,
+        "p95": 24.14,
+        "max": 33.37
+      }
+    },
+    {
+      "label": "loop_unknown_resume_256c",
+      "count": 256,
+      "workers": 32,
+      "statuses": {
+        "409": 256
+      },
+      "errors": 256,
+      "sample_errors": [
+        "{\"error\":\"no rows in result set\"}\n",
+        "{\"error\":\"no rows in result set\"}\n",
+        "{\"error\":\"no rows in result set\"}\n"
+      ],
+      "latency_ms": {
+        "min": 1.9,
+        "median": 9.96,
+        "p95": 21.37,
+        "max": 27.48
+      }
+    }
+  ]
+}
