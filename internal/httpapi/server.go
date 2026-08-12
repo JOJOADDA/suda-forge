@@ -69,6 +69,7 @@ type Server struct {
 	KnowledgeStore      knowledge.Store
 	ProductExperience   *productexperience.Service
 	ProductStore        *productexperience.PostgresStore
+	LoopCoordinator     *productexperience.Coordinator
 	Constitutions       map[string]constitution.Constitution
 	ConstitutionStore   *constitution.PostgresStore
 	ActivityLog         *productexperience.ActivityLog
@@ -125,6 +126,9 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/projects/{project}/impact/analyze", s.analyzeImpact)
 	mux.HandleFunc("GET /api/projects/{project}/agent-context", s.getAgentContext)
 	mux.HandleFunc("POST /api/projects/{project}/autonomous-loop/plan", s.planAutonomousLoop)
+	mux.HandleFunc("POST /api/projects/{project}/autonomous-loop/start", s.startAutonomousLoop)
+	mux.HandleFunc("GET /api/projects/{project}/autonomous-loop/{loop}", s.getAutonomousLoop)
+	mux.HandleFunc("POST /api/projects/{project}/autonomous-loop/{loop}/resume", s.resumeAutonomousLoop)
 	mux.HandleFunc("POST /api/projects/{project}/governance/evaluate", s.evaluateGovernance)
 	mux.HandleFunc("POST /api/projects/{project}/constitutions", s.createConstitution)
 	mux.HandleFunc("GET /api/projects/{project}/constitutions/{agent}", s.getConstitution)

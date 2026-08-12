@@ -76,6 +76,7 @@ const (
 
 type LoopPlan struct {
 	ID            string               `json:"id"`
+	Goal          string               `json:"goal,omitempty"`
 	ProjectID     string               `json:"project_id"`
 	Stages        []LoopStage          `json:"stages"`
 	Delegates     map[LoopStage]string `json:"delegates"`

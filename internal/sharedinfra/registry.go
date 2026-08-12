@@ -1,6 +1,7 @@
 package sharedinfra
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -65,11 +66,20 @@ func versionMatches(actual, required string) bool {
 	return false
 }
 
+type CachePersistence interface {
+	SaveCacheBlob(context.Context, Artifact, []byte) error
+	LoadCacheBlob(context.Context, Artifact) ([]byte, bool, error)
+	DeleteCacheBlob(context.Context, Artifact) error
+	SaveCacheEntry(context.Context, CacheEntry) error
+	LoadCacheEntries(context.Context) ([]CacheEntry, error)
+}
+
 type Cache struct {
-	mu      sync.Mutex
-	entries map[string]CacheEntry
-	blobs   map[string][]byte
-	now     func() time.Time
+	mu          sync.Mutex
+	entries     map[string]CacheEntry
+	blobs       map[string][]byte
+	now         func() time.Time
+	Persistence CachePersistence
 }
 
 func NewCache(now func() time.Time) *Cache {
@@ -89,6 +99,12 @@ func (c *Cache) Lookup(a Artifact) (CacheEntry, CacheStatus) {
 		return CacheEntry{Artifact: a, Status: CacheMiss}, CacheMiss
 	}
 	blob := c.blobs[artifactKey(a)]
+	if len(blob) == 0 && c.Persistence != nil {
+		if loaded, found, err := c.Persistence.LoadCacheBlob(context.Background(), a); err == nil && found {
+			blob = loaded
+			c.blobs[artifactKey(a)] = append([]byte(nil), loaded...)
+		}
+	}
 	if !verifyChecksum(blob, a.Checksum) {
 		e.Status = CacheCorrupt
 		c.entries[artifactKey(a)] = e
@@ -99,6 +115,9 @@ func (c *Cache) Lookup(a Artifact) (CacheEntry, CacheStatus) {
 	e.LastUsedAt = &now
 	e.RefCount++
 	c.entries[artifactKey(a)] = e
+	if c.Persistence != nil {
+		_ = c.Persistence.SaveCacheEntry(context.Background(), e)
+	}
 	return e, CacheHit
 }
 func (c *Cache) Put(a Artifact, data []byte) (CacheEntry, error) {
@@ -117,6 +136,15 @@ func (c *Cache) Put(a Artifact, data []byte) (CacheEntry, error) {
 		existing.VerifiedAt = &now
 		existing.LastUsedAt = &now
 		existing.RefCount++
+		if c.Persistence != nil {
+			if err := c.Persistence.SaveCacheBlob(context.Background(), a, data); err != nil {
+				return CacheEntry{}, err
+			}
+			if err := c.Persistence.SaveCacheEntry(context.Background(), existing); err != nil {
+				return CacheEntry{}, err
+			}
+		}
+		c.blobs[key] = append([]byte(nil), data...)
 		c.entries[key] = existing
 		return existing, nil
 	}
@@ -124,6 +152,16 @@ func (c *Cache) Put(a Artifact, data []byte) (CacheEntry, error) {
 	c.blobs[key] = stored
 	now := c.now().UTC()
 	e := CacheEntry{Artifact: a, Status: CacheHit, VerifiedAt: &now, LastUsedAt: &now, RefCount: 1}
+	if c.Persistence != nil {
+		if err := c.Persistence.SaveCacheBlob(context.Background(), a, stored); err != nil {
+			return CacheEntry{}, err
+		}
+		if err := c.Persistence.SaveCacheEntry(context.Background(), e); err != nil {
+			_ = c.Persistence.DeleteCacheBlob(context.Background(), a)
+			return CacheEntry{}, err
+		}
+	}
+	c.blobs[key] = stored
 	c.entries[key] = e
 	return e, nil
 }
@@ -135,7 +173,26 @@ func (c *Cache) Invalidate(a Artifact) {
 		e.Status = CacheInvalid
 		c.entries[key] = e
 		delete(c.blobs, key)
+		if c.Persistence != nil {
+			_ = c.Persistence.DeleteCacheBlob(context.Background(), a)
+			_ = c.Persistence.SaveCacheEntry(context.Background(), e)
+		}
 	}
+}
+func (c *Cache) Hydrate(ctx context.Context) error {
+	if c.Persistence == nil {
+		return nil
+	}
+	entries, err := c.Persistence.LoadCacheEntries(ctx)
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, e := range entries {
+		c.entries[artifactKey(e.Artifact)] = e
+	}
+	return nil
 }
 func (c *Cache) Stats() map[string]int {
 	c.mu.Lock()
@@ -158,7 +215,6 @@ func verifyChecksum(data []byte, expected string) bool {
 	expected = strings.TrimPrefix(expected, "sha256:")
 	return strings.EqualFold(actual, expected)
 }
-
 func (r *Registry) Load(tools []Tool) error {
 	for _, t := range tools {
 		if err := r.Register(t); err != nil {

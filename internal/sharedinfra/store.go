@@ -114,3 +114,62 @@ func loadArtifact(ctx context.Context, db interface {
 	_ = json.Unmarshal(meta, &a.Metadata)
 	return a, true
 }
+
+func (s PostgresStore) SaveCacheBlob(ctx context.Context, a Artifact, data []byte) error {
+	if s.DB == nil {
+		return errors.New("shared infrastructure database unavailable")
+	}
+	_, err := s.DB.Exec(ctx, `INSERT INTO global_cache_blobs(artifact_id,checksum,data,updated_at) VALUES($1,$2,$3,now()) ON CONFLICT(artifact_id) DO UPDATE SET checksum=EXCLUDED.checksum,data=EXCLUDED.data,updated_at=now()`, a.ID, a.Checksum, data)
+	return err
+}
+
+func (s PostgresStore) LoadCacheBlob(ctx context.Context, a Artifact) ([]byte, bool, error) {
+	if s.DB == nil {
+		return nil, false, errors.New("shared infrastructure database unavailable")
+	}
+	var checksum string
+	var data []byte
+	err := s.DB.QueryRow(ctx, `SELECT checksum,data FROM global_cache_blobs WHERE artifact_id=$1`, a.ID).Scan(&checksum, &data)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	if checksum != a.Checksum || !verifyChecksum(data, a.Checksum) {
+		return nil, false, nil
+	}
+	return data, true, nil
+}
+
+func (s PostgresStore) DeleteCacheBlob(ctx context.Context, a Artifact) error {
+	if s.DB == nil {
+		return errors.New("shared infrastructure database unavailable")
+	}
+	_, err := s.DB.Exec(ctx, `DELETE FROM global_cache_blobs WHERE artifact_id=$1`, a.ID)
+	return err
+}
+
+func (s PostgresStore) LoadCacheEntries(ctx context.Context) ([]CacheEntry, error) {
+	if s.DB == nil {
+		return nil, errors.New("shared infrastructure database unavailable")
+	}
+	rows, err := s.DB.Query(ctx, `SELECT e.status,e.verified_at,e.last_used_at,e.ref_count,a.id,a.name,a.version,a.platform,a.architecture,a.size,a.checksum,a.source,a.storage_location,a.metadata FROM global_cache_entries e JOIN shared_artifacts a ON a.id=e.artifact_id ORDER BY a.id`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []CacheEntry{}
+	for rows.Next() {
+		var e CacheEntry
+		var status string
+		var meta []byte
+		if err := rows.Scan(&status, &e.VerifiedAt, &e.LastUsedAt, &e.RefCount, &e.Artifact.ID, &e.Artifact.Name, &e.Artifact.Version, &e.Artifact.Platform, &e.Artifact.Architecture, &e.Artifact.Size, &e.Artifact.Checksum, &e.Artifact.Source, &e.Artifact.StorageLocation, &meta); err != nil {
+			return nil, err
+		}
+		e.Status = CacheStatus(status)
+		_ = json.Unmarshal(meta, &e.Artifact.Metadata)
+		out = append(out, e)
+	}
+	return out, rows.Err()
+}

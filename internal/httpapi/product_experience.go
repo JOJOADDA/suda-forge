@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"suda-forge/internal/constitution"
 	"suda-forge/internal/designintelligence"
@@ -154,6 +155,62 @@ func (s Server) planAutonomousLoop(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, out)
 }
+func (s Server) startAutonomousLoop(w http.ResponseWriter, r *http.Request) {
+	if s.ProductExperience == nil || s.LoopCoordinator == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "autonomous loop unavailable"})
+		return
+	}
+	var in struct {
+		Goal    string                                 `json:"goal"`
+		Blocked map[productexperience.LoopStage]string `json:"blocked"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&in); err != nil && err != io.EOF {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	plan, err := s.ProductExperience.PlanLoop(r.PathValue("project"), in.Blocked)
+	if err != nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
+		return
+	}
+	plan.Goal = in.Goal
+	execution := productexperience.LoopExecution{LoopPlan: plan, Results: map[productexperience.LoopStage]productexperience.LoopStageResult{}}
+	if err := s.LoopCoordinator.Start(r.Context(), execution); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusAccepted, execution)
+}
+
+func (s Server) getAutonomousLoop(w http.ResponseWriter, r *http.Request) {
+	if s.ProductStore == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "product experience store unavailable"})
+		return
+	}
+	out, err := s.ProductStore.GetLoopExecution(r.Context(), r.PathValue("loop"))
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		return
+	}
+	if out.ProjectID != r.PathValue("project") {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "loop does not belong to project"})
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (s Server) resumeAutonomousLoop(w http.ResponseWriter, r *http.Request) {
+	if s.LoopCoordinator == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "autonomous loop unavailable"})
+		return
+	}
+	if err := s.LoopCoordinator.Resume(r.Context(), r.PathValue("loop")); err != nil {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "RESUMING", "loop_id": r.PathValue("loop")})
+}
+
 func (s Server) evaluateGovernance(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Constitution constitution.Constitution `json:"constitution"`

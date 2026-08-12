@@ -155,6 +155,11 @@ func main() {
 		}
 	}
 	globalCache := sharedinfra.NewCache(time.Now)
+	globalCache.Persistence = sharedStore
+	if err := globalCache.Hydrate(ctx); err != nil {
+		logger.Error("shared cache hydration failed", "error", err)
+		os.Exit(1)
+	}
 
 	environmentResolver := sharedinfra.Resolver{Registry: toolRegistry, Cache: globalCache, Platform: "linux", Architecture: "amd64"}
 	designEngine := designintelligence.NewEngine(time.Now)
@@ -171,10 +176,32 @@ func main() {
 	designSystems := map[string]designintelligence.DesignSystem{}
 	productExperience.DesignSystems = designSystems
 	productStore := productexperience.PostgresStore{DB: db}
+	loopExecutor := productexperience.DelegatedStageExecutor{
+		Orchestrate: func(ctx context.Context, execution productexperience.LoopExecution) (map[string]any, error) {
+			workflow, err := orchestrator.Plan(orchestration.PlannerInput{Intent: orchestration.UserIntent{ProjectID: execution.ProjectID, Goal: execution.Goal}})
+			if err != nil {
+				return nil, err
+			}
+			if err := workflowStore.SaveWorkflow(ctx, workflow); err != nil {
+				return nil, err
+			}
+			return map[string]any{"workflow_id": workflow.ID, "status": workflow.Status}, nil
+		},
+		Verify: func(context.Context, productexperience.LoopExecution, productexperience.LoopStage) (map[string]any, error) {
+			return nil, productexperience.ErrLoopBlocked
+		},
+		Now: time.Now,
+	}
+	loopCoordinator := productexperience.NewCoordinator(&productStore, loopExecutor, time.Now)
+	go func() {
+		if err := loopCoordinator.Recover(context.Background()); err != nil {
+			logger.Error("autonomous_loop_recovery_failed", "error", err)
+		}
+	}()
 	activityLog := productexperience.NewActivityLog(time.Now)
 	activityLog.Store = productStore
 	go forwardProductActivity(context.Background(), eventBus, activityLog)
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: designSystems, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, ProductStore: &productStore, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: designSystems, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, ProductStore: &productStore, LoopCoordinator: loopCoordinator, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
