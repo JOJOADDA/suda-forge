@@ -1,0 +1,30 @@
+# Go
+/bin/
+*.test
+*.out
+
+# Frontend dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+.vite/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local databases, logs, and runtime state
+*.log
+*.sqlite
+*.db
+.DS_Store
+.vscode/
+.idea/
+
+# Temporary reports and local exports
+.tmp/
+.cache/
