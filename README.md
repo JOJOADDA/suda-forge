@@ -2,7 +2,7 @@
 
 SUDA FORGE is a production-oriented, provider-agnostic AI agent platform built as a modular monolith. Every project is modeled as a **Project Computer** with a runtime boundary, while Agents, Models, Runtimes, and Projects remain separate concepts.
 
-The repository currently contains completed Phases 1–6:
+The repository currently contains completed Phases 1–8:
 
 | Phase | Capability | Status |
 |---|---|---|
@@ -12,6 +12,8 @@ The repository currently contains completed Phases 1–6:
 | 4 | Agentic orchestration, task graphs, scheduling, persistence, approvals, SSE | Complete |
 | 5 | Verification Engine, authoritative evidence, bounded automatic repair, verification gates | Complete |
 | 6 | SUDA AI Fabric, local runtime adapters, hardware/GPU discovery, inference, lifecycle, routing integration | Complete |
+| 7 | Hosting and Deployment Fabric, previews, domains, certificates, health, rollback | Complete |
+| 8 | Project Intelligence, deterministic architecture selection, versioned environment manifests, resumable provisioning, persistence, APIs, SSE, Create Project wizard | Complete |
 
 ## Architecture
 
@@ -98,6 +100,14 @@ The Phase 7 API includes project-scoped services, service discovery, ports, depl
 
 Caddy and real LXC deployment remain environment-dependent. Configure `CADDY_ADMIN_URL` only when a controlled Caddy admin endpoint is available. In the current restricted Docker environment, real LXC, Caddy, external certificate issuance, and runtime deployment are reported as blocked rather than converted into fake success.
 
+## Phase 8 Project Intelligence and provisioning
+
+Phase 8 transforms non-technical project intent into a deterministic architecture proposal, an auditable versioned Environment Manifest, and a resumable Project Computer provisioning run. The implementation is deliberately provider-agnostic: every host operation remains behind `internal/runtime.Provider`, while LXC, GPU, browser, and unavailable local-tool capabilities return explicit `BLOCKED_BY_ENVIRONMENT` or failure states instead of fake success.
+
+The Phase 8 API includes `POST /api/projects/{project}/intelligence/analyze`, `POST /api/projects/{project}/environment/manifests`, and provisioning plan/start/status/cancel/resume/cleanup endpoints. Provisioning progress is adapted into the existing shared SSE event bus. PostgreSQL migration `008_project_intelligence.sql` stores intents, extracted requirements, architecture decisions, manifests, environment versions, provisioning runs and steps, installations, verification records, and environment events. The React dashboard now contains a four-step Create Project wizard: Intent, Analysis, Architecture, and Provisioning.
+
+Project Intelligence is deterministic by design. It does not silently replace an incompatible user override, and it records selected candidates, rejected alternatives, reasons, manifest fingerprints, and required verification evidence. Phase 8 composes with the existing Orchestration and Verification layers; it does not introduce microservices, Kubernetes, or a second runtime boundary.
+
 ## Out of scope until later phases
 
-RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, and Phase 8 work are intentionally not implemented.
+RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, and Phase 9 work are intentionally not implemented.

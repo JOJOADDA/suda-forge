@@ -16,12 +16,15 @@ import (
 	"suda-forge/internal/aifabric"
 	"suda-forge/internal/config"
 	"suda-forge/internal/deployment"
+	"suda-forge/internal/environment"
 	"suda-forge/internal/events"
 	"suda-forge/internal/httpapi"
 	"suda-forge/internal/lifecycle"
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
 	"suda-forge/internal/postgres"
+	"suda-forge/internal/projectintelligence"
+	"suda-forge/internal/provisioning"
 	"suda-forge/internal/routing"
 	"suda-forge/internal/verification"
 )
@@ -113,7 +116,15 @@ func main() {
 	_ = deployment.LocalStorage{Root: cfg.DeployStorageRoot}
 	verificationEngine := &verification.Engine{Registry: verification.DefaultRegistry(), Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
 	repairLoop := &verification.RepairLoop{Engine: verificationEngine, Analyzer: verification.DeterministicFailureAnalyzer{}, Executor: verification.OrchestrationRepairExecutor{Executor: orchestration.RuntimeAgentExecutor{}}, MaxAttempts: 3, Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog}
+	intelligenceEngine := &projectintelligence.Engine{Now: time.Now}
+	intelligenceStore := &projectintelligence.Store{DB: db}
+	environmentStore := &environment.Store{DB: db}
+	provisioningManager := provisioning.NewManager(time.Now)
+	provisioningManager.Runtime = runtimeProvider
+	provisioningManager.Store = provisioning.PostgresStore{DB: db}
+	provisioningManager.Events = provisioningEventSink{Bus: eventBus}
+	provisioningManager.Cache = provisioning.NewMemoryCache()
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

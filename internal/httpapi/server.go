@@ -10,9 +10,12 @@ import (
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
 	"suda-forge/internal/deployment"
+	"suda-forge/internal/environment"
 	"suda-forge/internal/events"
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
+	"suda-forge/internal/projectintelligence"
+	"suda-forge/internal/provisioning"
 	"suda-forge/internal/routing"
 	"suda-forge/internal/verification"
 
@@ -46,6 +49,10 @@ type Server struct {
 	PortRegistry       deployment.PortRegistry
 	ProxyProvider      deployment.ProxyProvider
 	Infrastructure     *deployment.Catalog
+	Intelligence       *projectintelligence.Engine
+	IntelligenceStore  *projectintelligence.Store
+	EnvironmentStore   *environment.Store
+	Provisioning       *provisioning.Manager
 }
 
 func (s Server) Handler() http.Handler {
@@ -63,6 +70,15 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/models/{id}", s.getModel)
 	mux.HandleFunc("GET /api/providers/{id}", s.getProvider)
 	mux.HandleFunc("POST /api/model-routing/decide", s.decideModel)
+	mux.HandleFunc("POST /api/projects/{project}/intelligence/analyze", s.analyzeProject)
+	mux.HandleFunc("POST /api/projects/{project}/environment/manifests", s.createEnvironmentManifest)
+	mux.HandleFunc("POST /api/projects/{project}/provisioning/plans", s.planProvisioning)
+	mux.HandleFunc("POST /api/provisioning/{run}/start", s.startProvisioning)
+	mux.HandleFunc("GET /api/provisioning/{run}", s.getProvisioning)
+	mux.HandleFunc("POST /api/provisioning/{run}/cancel", s.cancelProvisioning)
+	mux.HandleFunc("POST /api/provisioning/{run}/resume", s.resumeProvisioning)
+	mux.HandleFunc("POST /api/provisioning/{run}/cleanup", s.cleanupProvisioning)
+
 	mux.HandleFunc("POST /api/projects/{project}/plans", s.createPlan)
 	mux.HandleFunc("POST /api/projects/{project}/workflows", s.createWorkflow)
 	mux.HandleFunc("GET /api/projects/{project}/workflows/{workflow}", s.getWorkflow)
