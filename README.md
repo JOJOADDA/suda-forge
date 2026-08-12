@@ -85,7 +85,7 @@ bash scripts/check-architecture.sh
 
 The real LXC and local-AI runtime checks are environment-dependent. Deterministic adapter tests use test-only HTTP servers and never create fake production inference, fake GPU success, or fake runtime success.
 
-Phase reports and raw verification outputs are kept in `PHASE4_STATUS.md`, `PHASE5_STATUS.md`, `PHASE6_STATUS.md`, and `tests/`.
+Phase reports and raw verification outputs are kept in `PHASE4_STATUS.md`, `PHASE5_STATUS.md`, `PHASE6_STATUS.md`, [`PHASE8_STATUS.md`](./PHASE8_STATUS.md), [`PHASE9_STATUS.md`](./PHASE9_STATUS.md), and `tests/`.
 
 ## Security boundaries
 
