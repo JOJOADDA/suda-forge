@@ -80,3 +80,11 @@ go test -race ./internal/productexperience ./internal/verification
 ```
 
 The raw JSON evidence is included with this report in `tests_api_pressure_256.json`, `tests_api_pressure_resume_128.json`, and `tests_api_pressure_final_loop.json`.
+
+## Repeat validation on 12 August 2026
+
+A fresh isolated fixture, `repeat-pressure-1786565569`, was tested against the currently running server with 32 concurrent workers and 128 requests per scenario. The result matched the prior stability profile: loop status returned 128 × `200`, duplicate starts returned 128 × `202`, valid Verification creates returned 128 × `201`, valid resumes returned 128 × `202`, malformed requests returned 128 × `400`, and unknown resumes returned 128 × `409`.
+
+The repeat-run latency remained below the previous 256-request envelope: loop status P95 was 14.12ms, duplicate start P95 was 13.16ms, valid Verification P95 was 77.88ms, valid resume P95 was 11.64ms, and unknown resume P95 was 8.81ms. PostgreSQL contained one persisted loop row in `BLOCKED` state and 128 persisted Verification runs in the expected `FAILED` runtime-blocked state. The server health endpoint returned `200 OK` after the run.
+
+Raw repeat evidence is preserved in `tests_api_pressure_repeat_128.json`.

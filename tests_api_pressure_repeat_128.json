@@ -1,0 +1,166 @@
+{
+  "base": "http://127.0.0.1:18080",
+  "project": "repeat-pressure-1786565569",
+  "reports": [
+    {
+      "label": "loop_start_1x",
+      "count": 1,
+      "workers": 1,
+      "statuses": {
+        "202": 1
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 38.87,
+        "median": 38.87,
+        "p95": 38.87,
+        "max": 38.87
+      }
+    },
+    {
+      "label": "loop_status_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "200": 128
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 1.51,
+        "median": 6.01,
+        "p95": 14.12,
+        "max": 19.55
+      }
+    },
+    {
+      "label": "loop_duplicate_start_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "202": 128
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 2.52,
+        "median": 6.69,
+        "p95": 13.16,
+        "max": 15.42
+      }
+    },
+    {
+      "label": "loop_malformed_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "400": 128
+      },
+      "errors": 128,
+      "sample_errors": [
+        "{\"error\":\"invalid character 'n' looking for beginning of object key string\"}\n",
+        "{\"error\":\"invalid character 'n' looking for beginning of object key string\"}\n",
+        "{\"error\":\"invalid character 'n' looking for beginning of object key string\"}\n"
+      ],
+      "latency_ms": {
+        "min": 1.37,
+        "median": 5.25,
+        "p95": 12.42,
+        "max": 16.22
+      }
+    },
+    {
+      "label": "verification_valid_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "201": 128
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 25.15,
+        "median": 54.03,
+        "p95": 77.88,
+        "max": 86.35
+      }
+    },
+    {
+      "label": "verification_malformed_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "400": 128
+      },
+      "errors": 128,
+      "sample_errors": [
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"invalid character 'n' looking for beginning of object key string\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"invalid character 'n' looking for beginning of object key string\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"invalid character 'n' looking for beginning of object key string\"}}\n"
+      ],
+      "latency_ms": {
+        "min": 1.95,
+        "median": 5.49,
+        "p95": 10.83,
+        "max": 13.1
+      }
+    },
+    {
+      "label": "verification_missing_id_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "400": 128
+      },
+      "errors": 128,
+      "sample_errors": [
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"project_id is required\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"project_id is required\"}}\n",
+        "{\"error\":{\"code\":\"Bad Request\",\"message\":\"project_id is required\"}}\n"
+      ],
+      "latency_ms": {
+        "min": 1.47,
+        "median": 5.51,
+        "p95": 12.0,
+        "max": 16.24
+      }
+    },
+    {
+      "label": "loop_resume_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "202": 128
+      },
+      "errors": 0,
+      "sample_errors": [],
+      "latency_ms": {
+        "min": 1.74,
+        "median": 5.46,
+        "p95": 11.64,
+        "max": 15.58
+      }
+    },
+    {
+      "label": "loop_unknown_resume_128c",
+      "count": 128,
+      "workers": 32,
+      "statuses": {
+        "409": 128
+      },
+      "errors": 128,
+      "sample_errors": [
+        "{\"error\":\"no rows in result set\"}\n",
+        "{\"error\":\"no rows in result set\"}\n",
+        "{\"error\":\"no rows in result set\"}\n"
+      ],
+      "latency_ms": {
+        "min": 1.29,
+        "median": 4.58,
+        "p95": 8.81,
+        "max": 15.28
+      }
+    }
+  ]
+}
