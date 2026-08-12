@@ -20,6 +20,7 @@ import (
 	"suda-forge/internal/orchestration"
 	"suda-forge/internal/postgres"
 	"suda-forge/internal/routing"
+	"suda-forge/internal/verification"
 )
 
 func main() {
@@ -71,7 +72,11 @@ func main() {
 	planner := orchestration.DeterministicPlanner{}
 	orchestrator := orchestration.Orchestrator{Planner: planner, Now: time.Now}
 	workflowStore := orchestration.PostgresStore{DB: db}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus(), AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore}
+	eventBus := events.NewBus()
+	verificationStore := verification.Store{DB: db}
+	verificationEngine := &verification.Engine{Registry: verification.DefaultRegistry(), Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
+	repairLoop := &verification.RepairLoop{Engine: verificationEngine, Analyzer: verification.DeterministicFailureAnalyzer{}, Executor: verification.OrchestrationRepairExecutor{Executor: orchestration.RuntimeAgentExecutor{}}, MaxAttempts: 3, Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

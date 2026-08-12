@@ -1,0 +1,2 @@
+WARN frontend contains adapter labels; verify it does not parse provider output
+PASS architecture dependency checks

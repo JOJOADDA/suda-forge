@@ -12,6 +12,7 @@ import (
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
 	"suda-forge/internal/routing"
+	"suda-forge/internal/verification"
 
 	"suda-forge/domain/project"
 	"suda-forge/internal/lifecycle"
@@ -20,17 +21,21 @@ import (
 )
 
 type Server struct {
-	Projects      postgres.Projects
-	Lifecycle     lifecycle.Service
-	Events        *events.Bus
-	AgentService  *agent.Service
-	AgentRegistry *agent.Registry
-	ModelRegistry *model.Registry
-	Router        *routing.Router
-	RoutingModels []routing.ModelProfile
-	RoutingStore  *routing.Store
-	Orchestrator  *orchestration.Orchestrator
-	WorkflowStore *orchestration.PostgresStore
+	Projects           postgres.Projects
+	Lifecycle          lifecycle.Service
+	Events             *events.Bus
+	AgentService       *agent.Service
+	AgentRegistry      *agent.Registry
+	ModelRegistry      *model.Registry
+	Router             *routing.Router
+	RoutingModels      []routing.ModelProfile
+	RoutingStore       *routing.Store
+	Orchestrator       *orchestration.Orchestrator
+	WorkflowStore      *orchestration.PostgresStore
+	VerificationStore  *verification.Store
+	VerificationEngine *verification.Engine
+	RepairLoop         *verification.RepairLoop
+	RuntimeProvider    runtime.Provider
 }
 
 func (s Server) Handler() http.Handler {
@@ -52,6 +57,13 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/projects/{project}/workflows", s.createWorkflow)
 	mux.HandleFunc("GET /api/projects/{project}/workflows/{workflow}", s.getWorkflow)
 	mux.HandleFunc("POST /api/projects/{project}/workflows/{workflow}/cancel", s.cancelWorkflow)
+	mux.HandleFunc("POST /api/verifications", s.createVerification)
+	mux.HandleFunc("GET /api/verifications/{id}", s.getVerification)
+	mux.HandleFunc("POST /api/verifications/{id}/cancel", s.cancelVerification)
+	mux.HandleFunc("POST /api/verifications/{id}/repair", s.repairVerification)
+	mux.HandleFunc("GET /api/verifications/{id}/artifacts", s.verificationArtifacts)
+	mux.HandleFunc("GET /api/tasks/{id}/verifications", s.taskVerifications)
+
 	mux.HandleFunc("POST /api/projects/{project}/workflows/{workflow}/tasks/{task}/approvals", s.requestApproval)
 	mux.HandleFunc("POST /api/projects/{project}/workflows/{workflow}/approvals/{approval}/resolve", s.resolveApproval)
 	mux.HandleFunc("GET /api/projects/{project}/agents", s.listAgents)
