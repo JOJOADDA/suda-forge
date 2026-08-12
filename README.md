@@ -86,7 +86,7 @@ bash scripts/check-architecture.sh
 
 The real LXC and local-AI runtime checks are environment-dependent. Deterministic adapter tests use test-only HTTP servers and never create fake production inference, fake GPU success, or fake runtime success.
 
-Phase reports and raw verification outputs are kept in `PHASE4_STATUS.md`, `PHASE5_STATUS.md`, `PHASE6_STATUS.md`, [`PHASE8_STATUS.md`](./PHASE8_STATUS.md), [`PHASE9_STATUS.md`](./PHASE9_STATUS.md), [`PHASE10_STATUS.md`](./PHASE10_STATUS.md), [`PHASE10_IMPLEMENTATION_MAP.md`](./PHASE10_IMPLEMENTATION_MAP.md), [`SUDA_FORGE_INTEGRATION_AUDIT.md`](./SUDA_FORGE_INTEGRATION_AUDIT.md), [`SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md`](./SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md), [`SUDA_FORGE_PRODUCTION_READINESS.md`](./SUDA_FORGE_PRODUCTION_READINESS.md), and `tests/`.
+Phase reports and raw verification outputs are kept in `PHASE4_STATUS.md`, `PHASE5_STATUS.md`, `PHASE6_STATUS.md`, [`PHASE8_STATUS.md`](./PHASE8_STATUS.md), [`PHASE9_STATUS.md`](./PHASE9_STATUS.md), [`PHASE10_STATUS.md`](./PHASE10_STATUS.md), [`PHASE10_IMPLEMENTATION_MAP.md`](./PHASE10_IMPLEMENTATION_MAP.md), [`SUDA_FORGE_INTEGRATION_AUDIT.md`](./SUDA_FORGE_INTEGRATION_AUDIT.md), [`SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md`](./SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md), [`SUDA_FORGE_PRODUCTION_READINESS.md`](./SUDA_FORGE_PRODUCTION_READINESS.md), [`SUDA_FORGE_FRONTEND_INTEGRATION_REPORT.md`](./SUDA_FORGE_FRONTEND_INTEGRATION_REPORT.md), and `tests/`.
 
 ## Security boundaries
 
@@ -120,7 +120,7 @@ The current restricted Docker host still cannot provide real LXC, GPU, browser, 
 
 Phase 10 adds the product experience and intelligence composition layer without rebuilding any Phase 1–9 subsystem. It provides Design Intelligence and structured Design System persistence, a queryable Project Knowledge Graph, Agent Constitution and policy evaluation, layered Context Assembly, session recovery projections, graph-based impact analysis, autonomous-loop delegation to existing orchestration and verification, a truthful Visual QA boundary, and project activity projection through the existing event bus and SSE.
 
-The Phase 10 status report and implementation map are available in [`PHASE10_STATUS.md`](./PHASE10_STATUS.md) and [`PHASE10_IMPLEMENTATION_MAP.md`](./PHASE10_IMPLEMENTATION_MAP.md). The post-Phase-10 integration audit, hardening report, and frozen-architecture Production Readiness record are available in [`SUDA_FORGE_INTEGRATION_AUDIT.md`](./SUDA_FORGE_INTEGRATION_AUDIT.md), [`SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md`](./SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md), and [`SUDA_FORGE_PRODUCTION_READINESS.md`](./SUDA_FORGE_PRODUCTION_READINESS.md).
+The Phase 10 status report and implementation map are available in [`PHASE10_STATUS.md`](./PHASE10_STATUS.md) and [`PHASE10_IMPLEMENTATION_MAP.md`](./PHASE10_IMPLEMENTATION_MAP.md). The post-Phase-10 integration audit, hardening report, frozen-architecture Production Readiness record, and frontend integration report are available in [`SUDA_FORGE_INTEGRATION_AUDIT.md`](./SUDA_FORGE_INTEGRATION_AUDIT.md), [`SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md`](./SUDA_FORGE_INTEGRATION_HARDENING_REPORT.md), [`SUDA_FORGE_PRODUCTION_READINESS.md`](./SUDA_FORGE_PRODUCTION_READINESS.md), and [`SUDA_FORGE_FRONTEND_INTEGRATION_REPORT.md`](./SUDA_FORGE_FRONTEND_INTEGRATION_REPORT.md).
 
 ## Out of scope until later phases
 
