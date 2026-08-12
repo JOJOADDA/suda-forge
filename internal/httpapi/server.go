@@ -9,6 +9,7 @@ import (
 
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
+	"suda-forge/internal/deployment"
 	"suda-forge/internal/events"
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
@@ -39,6 +40,12 @@ type Server struct {
 	RuntimeProvider    runtime.Provider
 	AIManager          *aifabric.Manager
 	AIStore            *aifabric.Store
+	DeploymentManager  *deployment.Manager
+	DeploymentStore    *deployment.Store
+	ServiceDiscovery   deployment.ServiceDiscovery
+	PortRegistry       deployment.PortRegistry
+	ProxyProvider      deployment.ProxyProvider
+	Infrastructure     *deployment.Catalog
 }
 
 func (s Server) Handler() http.Handler {
@@ -83,6 +90,26 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/ai/inference/stream", s.aiInferenceStream)
 
 	mux.HandleFunc("GET /api/projects/{project}/ai-settings", s.aiProjectSettings)
+	mux.HandleFunc("GET /api/projects/{project}/services", s.deploymentServices)
+	mux.HandleFunc("POST /api/projects/{project}/services/discover", s.deploymentDiscoverServices)
+
+	mux.HandleFunc("GET /api/projects/{project}/ports", s.deploymentPorts)
+	mux.HandleFunc("POST /api/projects/{project}/ports", s.deploymentReservePort)
+
+	mux.HandleFunc("GET /api/projects/{project}/deployments", s.deploymentList)
+	mux.HandleFunc("POST /api/projects/{project}/deployments", s.deploymentCreate)
+	mux.HandleFunc("GET /api/projects/{project}/deployments/{deployment}", s.deploymentGet)
+	mux.HandleFunc("POST /api/projects/{project}/deployments/{deployment}/rollback", s.deploymentRollback)
+	mux.HandleFunc("GET /api/projects/{project}/releases", s.releaseList)
+	mux.HandleFunc("POST /api/projects/{project}/health-checks", s.healthCheckRun)
+
+	mux.HandleFunc("POST /api/projects/{project}/previews", s.previewCreate)
+	mux.HandleFunc("DELETE /api/projects/{project}/previews/{preview}", s.previewDelete)
+	mux.HandleFunc("GET /api/projects/{project}/previews", s.previewList)
+	mux.HandleFunc("POST /api/projects/{project}/domains", s.domainCreate)
+	mux.HandleFunc("GET /api/projects/{project}/domains", s.domainList)
+	mux.HandleFunc("POST /api/projects/{project}/domains/{domain}/certificate", s.certificateIssue)
+
 	mux.HandleFunc("PUT /api/projects/{project}/ai-settings", s.aiUpdateProjectSettings)
 
 	mux.HandleFunc("GET /api/tasks/{id}/verifications", s.taskVerifications)

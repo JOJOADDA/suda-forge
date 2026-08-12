@@ -88,6 +88,16 @@ Phase reports and raw verification outputs are kept in `PHASE4_STATUS.md`, `PHAS
 
 Models do not execute tools directly. Tool calls are normalized and returned to the Agent layer, where tool policy and Project Computer boundaries decide whether filesystem, terminal, browser, Git, database, or other actions may occur. Provider credentials remain server-side through the existing credential-reference infrastructure. Host GPU access is not exposed indiscriminately; allocation is capability- and policy-based.
 
+## Phase 7 hosting and deployment
+
+Phase 7 adds the local-first Hosting and Deployment Fabric without changing the Project Computer, Agent Fabric, Model Fabric, Orchestrator, or Verification Engine foundations. The deployment path is modeled as `CODE → BUILD → TEST → VERIFY → RELEASE → DEPLOY → HEALTH → TRAFFIC → ROLLBACK`.
+
+The provider-neutral deployment contracts are in `internal/deployment`. They cover service discovery, port allocation, deployment, network validation, proxy routing, certificates, health checks, and storage. The first local adapters are runtime-scoped service discovery through `RuntimeProvider`, Caddy route administration through its HTTP admin API, Caddy/Let's Encrypt certificate boundaries, and local filesystem storage with traversal protection. Deployment build, test, health, and release operations are executed through the Project Computer runtime contract; HTTP handlers never run host shell commands.
+
+The Phase 7 API includes project-scoped services, service discovery, ports, deployments, releases, rollback, previews, domains, certificates, and health checks. The dashboard includes a Deployment Workspace showing environment, revision, lifecycle state, health, failure reason, and rollback controls. Deployment activation requires an authoritative Phase 5 verification run ID, explicit build/test command arrays, and a successful runtime-scoped health check.
+
+Caddy and real LXC deployment remain environment-dependent. Configure `CADDY_ADMIN_URL` only when a controlled Caddy admin endpoint is available. In the current restricted Docker environment, real LXC, Caddy, external certificate issuance, and runtime deployment are reported as blocked rather than converted into fake success.
+
 ## Out of scope until later phases
 
-RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, and Phase 7 work are intentionally not implemented.
+RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, and Phase 8 work are intentionally not implemented.

@@ -1,0 +1,22 @@
+?   	suda-forge/adapters/runtimes/lxc	[no test files]
+?   	suda-forge/cmd/orchestration-sim	[no test files]
+?   	suda-forge/cmd/routing-sim	[no test files]
+?   	suda-forge/cmd/server	[no test files]
+ok  	suda-forge/domain/project	(cached)
+ok  	suda-forge/internal/agent	(cached)
+?   	suda-forge/internal/config	[no test files]
+ok  	suda-forge/internal/aifabric	(cached)
+ok  	suda-forge/internal/auth	(cached)
+ok  	suda-forge/internal/deployment	(cached)
+?   	suda-forge/internal/httpapi	[no test files]
+?   	suda-forge/internal/lifecycle	[no test files]
+ok  	suda-forge/internal/events	(cached)
+ok  	suda-forge/internal/filesystem	(cached)
+ok  	suda-forge/internal/model	(cached)
+?   	suda-forge/internal/postgres	[no test files]
+?   	suda-forge/internal/services	[no test files]
+?   	suda-forge/internal/terminal	[no test files]
+ok  	suda-forge/internal/orchestration	(cached)
+ok  	suda-forge/internal/routing	(cached)
+ok  	suda-forge/internal/runtime	(cached)
+ok  	suda-forge/internal/verification	(cached)

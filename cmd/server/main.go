@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
 	"suda-forge/internal/config"
+	"suda-forge/internal/deployment"
 	"suda-forge/internal/events"
 	"suda-forge/internal/httpapi"
 	"suda-forge/internal/lifecycle"
@@ -87,9 +89,31 @@ func main() {
 	aiManager := aifabric.NewManager(aiRegistry, aifabric.BusSink{Bus: eventBus})
 	aiStore := aifabric.Store{DB: db}
 	verificationStore := verification.Store{DB: db}
+	deploymentStore := deployment.Store{DB: db}
+	deploymentManager := deployment.NewManager(time.Now)
+	serviceDiscovery := deployment.RuntimeServiceDiscovery{Runtime: runtimeProvider}
+	portRegistry := deployment.NewMemoryPortRegistry()
+	infrastructureCatalog := deployment.NewCatalog()
+	infrastructureCatalog.Certificates = deployment.CaddyCertificate{Proxy: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}}
+	deploymentManager.Runtime = runtimeProvider
+	deploymentManager.Events = deployment.CompositeAuditSink{Bus: eventBus, DB: db}
+	deploymentManager.Proxy = deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}
+	deploymentManager.Health = deployment.RuntimeHealthChecker{Runtime: runtimeProvider}
+	deploymentManager.Deployer = deployment.RuntimeDeploymentProvider{Runtime: runtimeProvider}
+	deploymentManager.Verify = deployment.VerificationAdapter{Check: func(ctx context.Context, runID string) error {
+		run, err := verificationStore.Get(ctx, verification.ID(runID))
+		if err != nil {
+			return err
+		}
+		if run.Status != verification.Passed {
+			return fmt.Errorf("verification run %s is not passed", runID)
+		}
+		return nil
+	}}
+	_ = deployment.LocalStorage{Root: cfg.DeployStorageRoot}
 	verificationEngine := &verification.Engine{Registry: verification.DefaultRegistry(), Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
 	repairLoop := &verification.RepairLoop{Engine: verificationEngine, Analyzer: verification.DeterministicFailureAnalyzer{}, Executor: verification.OrchestrationRepairExecutor{Executor: orchestration.RuntimeAgentExecutor{}}, MaxAttempts: 3, Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
