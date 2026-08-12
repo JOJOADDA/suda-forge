@@ -1,0 +1,1 @@
+mirror_http=206 bytes=1048576 speed=238213 time=4.401830 remote=139.59.230.173

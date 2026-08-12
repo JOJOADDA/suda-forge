@@ -1,0 +1,11 @@
+Downloading the image index
+Downloading the rootfs
+Downloading the metadata
+The image cache is now ready
+Unpacking the rootfs
+
+---
+You just created an Ubuntu jammy amd64 (20260810_07:42) container.
+
+To enable SSH, run: apt install openssh-server
+No default root or user password are set by LXC.

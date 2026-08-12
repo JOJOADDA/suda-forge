@@ -1,0 +1,1 @@
+lxc-create suda-diag 20260812122915.992 DEBUG    storage - ../src/lxc/storage/storage.c:get_storage_by_name:209 - Detected rootfs type "dir"

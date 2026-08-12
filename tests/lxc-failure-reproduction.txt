@@ -1,0 +1,36 @@
+=== DOWNLOAD TEMPLATE REMOTES ===
+3:# Client script for LXC container images.
+39:DOWNLOAD_SERVER="images.linuxcontainers.org"
+72:download_file() {
+73:  if ! wget_wrapper --user-agent="lxc/5.0.3 compat:${DOWNLOAD_COMPAT_LEVEL}" -T 30 -q "https://${DOWNLOAD_SERVER}/$1" -O "$2" >/dev/null 2>&1; then
+77:      echo "ERROR: Failed to download https://${DOWNLOAD_SERVER}/$1" 1>&2
+122:LXC container image downloader
+126:[ -l | --list ]: List all available images and exit
+135:[ --server <server> ]: Image server (default: "images.linuxcontainers.org")
+166:    --server)      DOWNLOAD_SERVER="$2"; shift 2;;
+223:  DOWNLOAD_TEMP="${DOWNLOAD_TEMP}/tmp/lxc-download.$$"
+231:# Simply list images
+237:  if ! download_file "${DOWNLOAD_INDEX_PATH}.${DOWNLOAD_COMPAT_LEVEL}" "${DOWNLOAD_TEMP}/index" noexit; then
+238:    download_file "${DOWNLOAD_INDEX_PATH}" "${DOWNLOAD_TEMP}/index" normal
+292:LXC_CACHE_PATH="${LXC_CACHE_PATH}/download/${DOWNLOAD_DIST}"
+306:        echo "The cached copy has expired, re-downloading..."
+319:  if ! download_file "${DOWNLOAD_INDEX_PATH}.${DOWNLOAD_COMPAT_LEVEL}" "${DOWNLOAD_TEMP}/index" noexit; then
+320:    download_file "${DOWNLOAD_INDEX_PATH}" "${DOWNLOAD_TEMP}/index" normal
+352:    download_file "${DOWNLOAD_URL}/rootfs.tar.xz" "${DOWNLOAD_TEMP}/rootfs.tar.xz" normal
+355:    download_file "${DOWNLOAD_URL}/meta.tar.xz" "${DOWNLOAD_TEMP}/meta.tar.xz" normal
+=== IMAGE INDEX ===
+{"index": {"images": {"datatype": "image-downloads", "path": "streams/v1/images.json", "format": "products:1.0", "products": ["almalinux:10:amd64:cloud", "almalinux:10:amd64:default", "almalinux:10:arm64:cloud", "almalinux:10:arm64:default", "almalinux:8:amd64:cloud", "almalinux:8:amd64:default", "almalinux:8:arm64:cloud", "almalinux:8:arm64:default", "almalinux:9:amd64:cloud", "almalinux:9:amd64:default", "almalinux:9:arm64:cloud", "almalinux:9:arm64:default", "alpine:3.21:amd64:cloud", "alpine
+=== ROOTFS HEADER ===
+HTTP/1.1 200 OK
+server: nginx
+date: Wed, 12 Aug 2026 12:29:14 GMT
+content-type: text/html
+cache-control: no-cache
+
+
+=== LXC DEBUG CREATE ===
+Downloading the image index
+Downloading the rootfs
+lxc_create_exit=124
+
+=== LXC LOG ===

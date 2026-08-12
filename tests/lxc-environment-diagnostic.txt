@@ -1,0 +1,283 @@
+
+===== OS =====
+PRETTY_NAME="Ubuntu 24.04.4 LTS"
+NAME="Ubuntu"
+VERSION_ID="24.04"
+VERSION="24.04.4 LTS (Noble Numbat)"
+VERSION_CODENAME=noble
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=noble
+LOGO=ubuntu-logo
+
+===== KERNEL =====
+Linux 816e68737da3 6.1.102 #1 SMP PREEMPT_DYNAMIC Tue Mar 25 09:02:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+
+===== ARCH =====
+x86_64
+
+===== USER =====
+ubuntu
+uid=1000(ubuntu) gid=1000(ubuntu) groups=1000(ubuntu),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev)
+
+===== SUDO =====
+sudo_exit=0
+
+===== LXC_INSTALLATION =====
+/home/ubuntu/suda-forge/tests/diagnose-lxc.sh: line 11: lxc: command not found
+LXC version 5.0.3
+
+--- Namespaces ---
+Namespaces: enabled
+Utsname namespace: enabled
+Ipc namespace: enabled
+Pid namespace: enabled
+User namespace: enabled
+Network namespace: enabled
+
+--- Control groups ---
+Cgroups: enabled
+Cgroup namespace: enabled
+Cgroup v1 mount points: 
+Cgroup v2 mount points: 
+ - /sys/fs/cgroup
+Cgroup device: enabled
+Cgroup sched: enabled
+Cgroup cpu account: enabled
+Cgroup memory controller: enabled
+Cgroup cpuset: enabled
+
+--- Misc ---
+Veth pair device: enabled
+Macvlan: missing
+Vlan: missing
+Bridges: enabled
+Advanced netfilter: enabled
+CONFIG_IP_NF_TARGET_MASQUERADE: enabled
+CONFIG_IP6_NF_TARGET_MASQUERADE: enabled
+CONFIG_NETFILTER_XT_TARGET_CHECKSUM: missing
+CONFIG_NETFILTER_XT_MATCH_COMMENT: missing
+FUSE (for use with lxcfs): enabled
+
+--- Checkpoint/Restore ---
+checkpoint restore: missing
+CONFIG_FHANDLE: enabled
+CONFIG_EVENTFD: enabled
+CONFIG_EPOLL: enabled
+CONFIG_UNIX_DIAG: missing
+CONFIG_INET_DIAG: enabled
+CONFIG_PACKET_DIAG: missing
+CONFIG_NETLINK_DIAG: missing
+File capabilities: enabled
+
+Note : Before booting a new kernel, you can check its configuration
+usage : CONFIG=/path/to/config /usr/bin/lxc-checkconfig
+
+/usr/bin/lxc-create
+5.0.3
+
+===== SERVICES =====
+○ lxc.service - LXC Container Initialization and Autoboot Code
+     Loaded: loaded (/usr/lib/systemd/system/lxc.service; enabled; preset: enabled)
+     Active: inactive (dead)
+       Docs: man:lxc-autostart
+             man:lxc
+○ lxcfs.service - FUSE filesystem for LXC
+     Loaded: loaded (/usr/lib/systemd/system/lxcfs.service; enabled; preset: enabled)
+     Active: inactive (dead)
+       Docs: man:lxcfs(1)
+
+===== CONTAINERS =====
+sudo: lxc: command not found
+NAME       STATE   AUTOSTART GROUPS IPV4 IPV6 UNPRIVILEGED 
+suda-debug STOPPED 0         -      -    -    false        
+
+===== STORAGE =====
+sudo: lxc: command not found
+sudo: lxc: command not found
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root        40G  9.2G   31G  24% /
+tmpfs           2.0G  1.1M  2.0G   1% /dev/shm
+tmpfs           789M  188K  789M   1% /run
+tmpfs           5.0M     0  5.0M   0% /run/lock
+
+===== NETWORKS =====
+sudo: lxc: command not found
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc pfifo_fast state UP group default qlen 1000
+    link/ether 02:fc:00:00:00:05 brd ff:ff:ff:ff:ff:ff
+    inet 169.254.0.21/30 brd 169.254.0.23 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::fc:ff:fe00:5/64 scope link 
+       valid_lft forever preferred_lft forever
+default via 169.254.0.22 dev eth0 
+169.254.0.20/30 dev eth0 proto kernel scope link src 169.254.0.21 
+
+===== INTERNET =====
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0  0 65715    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0
+HTTP/1.1 200 OK
+server: nginx
+date: Wed, 12 Aug 2026 12:28:47 GMT
+content-type: text/html
+content-length: 65715
+last-modified: Wed, 12 Aug 2026 12:20:47 GMT
+etag: "6a7c651f-100b3"
+access-control-allow-origin: *
+accept-ranges: bytes
+
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+HTTP/1.1 200 OK
+Date: Wed, 12 Aug 2026 12:28:48 GMT
+Server: Apache/2.4.29 (Ubuntu)
+Content-Type: text/html;charset=UTF-8
+
+
+===== DNS =====
+2602:fc62:a:1::8 images.linuxcontainers.org
+2620:2d:4000:1::1a cloud-images.ubuntu.com
+2620:2d:4000:1::17 cloud-images.ubuntu.com
+
+===== TLS =====
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0* Host images.linuxcontainers.org:443 was resolved.
+* IPv6: 2602:fc62:a:1::8
+* IPv4: 45.45.148.8
+*   Trying 45.45.148.8:443...
+* Connected to images.linuxcontainers.org (45.45.148.8) port 443
+* ALPN: curl offers h2,http/1.1
+} [5 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Client hello (1):
+} [512 bytes data]
+*  CAfile: /etc/ssl/certs/ca-certificates.crt
+*  CApath: /etc/ssl/certs
+  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Server hello (2):
+{ [122 bytes data]
+* TLSv1.3 (IN), TLS handshake, Encrypted Extensions (8):
+{ [32 bytes data]
+* TLSv1.3 (IN), TLS handshake, Certificate (11):
+{ [4352 bytes data]
+* TLSv1.3 (IN), TLS handshake, CERT verify (15):
+{ [520 bytes data]
+* TLSv1.3 (IN), TLS handshake, Finished (20):
+{ [52 bytes data]
+* TLSv1.3 (OUT), TLS change cipher, Change cipher spec (1):
+} [1 bytes data]
+* TLSv1.3 (OUT), TLS handshake, Finished (20):
+} [52 bytes data]
+* SSL connection using TLSv1.3 / TLS_AES_256_GCM_SHA384 / X25519 / RSASSA-PSS
+* ALPN: server did not agree on a protocol. Uses default.
+* Server certificate:
+*  subject: CN=images.linuxcontainers.org
+*  start date: Aug  4 20:18:22 2026 GMT
+*  expire date: Nov  2 20:18:21 2026 GMT
+*  subjectAltName: host "images.linuxcontainers.org" matched cert's "images.linuxcontainers.org"
+*  issuer: C=US; O=Let's Encrypt; CN=YR1
+*  SSL certificate verify ok.
+*   Certificate level 0: Public key type RSA (4096/152 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 1: Public key type RSA (2048/112 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 2: Public key type RSA (4096/152 Bits/secBits), signed using sha256WithRSAEncryption
+*   Certificate level 3: Public key type RSA (4096/152 Bits/secBits), signed using sha256WithRSAEncryption
+* using HTTP/1.x
+} [5 bytes data]
+> HEAD / HTTP/1.1
+> Host: images.linuxcontainers.org
+> User-Agent: curl/8.5.0
+> Accept: */*
+> 
+{ [5 bytes data]
+* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+{ [265 bytes data]
+  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0* TLSv1.3 (IN), TLS handshake, Newsession Ticket (4):
+{ [265 bytes data]
+* old SSL session ID is stale, removing
+{ [5 bytes data]
+< HTTP/1.1 200 OK
+< server: nginx
+< date: Wed, 12 Aug 2026 12:28:49 GMT
+< content-type: text/html
+< content-length: 65715
+< last-modified: Wed, 12 Aug 2026 12:20:47 GMT
+< etag: "6a7c651f-100b3"
+< access-control-allow-origin: *
+< accept-ranges: bytes
+< 
+  0 65715    0     0    0     0      0      0 --:--:--  0:00:02 --:--:--     0
+* Connection #0 to host images.linuxcontainers.org left intact
+HTTP/1.1 200 OK
+server: nginx
+date: Wed, 12 Aug 2026 12:28:49 GMT
+content-type: text/html
+content-length: 65715
+last-modified: Wed, 12 Aug 2026 12:20:47 GMT
+etag: "6a7c651f-100b3"
+access-control-allow-origin: *
+accept-ranges: bytes
+
+
+===== RESOURCES =====
+               total        used        free      shared  buff/cache   available
+Mem:           3.8Gi       1.0Gi       764Mi        37Mi       2.5Gi       2.8Gi
+Swap:          2.0Gi          0B       2.0Gi
+
+===== KERNEL_FEATURES =====
+sysctl: cannot stat /proc/sys/kernel/unprivileged_userns_clone: No such file or directory
+
+===== SECURITY =====
+Error: Package ufw is not allowed in this system.
+Chain INPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain FORWARD (policy ACCEPT)
+target     prot opt source               destination         
+
+Chain OUTPUT (policy ACCEPT)
+target     prot opt source               destination         
+
+===== PROXY =====
+OPENAI_BASE_URL=https://api.manus.im/api/llm-proxy/v1
+OPENAI_API_BASE=https://api.manus.im/api/llm-proxy/v1
+
+===== VIRTUALIZATION =====
+docker
+0::/init.scope
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	000001ffffffffff
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	0
+Seccomp_filters:	0
+
+===== SUBIDS =====
+ubuntu:100000:65536
+user:165536:65536
+ubuntu:100000:65536
+user:165536:65536
+
+===== LXC_CONFIG =====
+/etc/lxc/default.conf
+lxc.net.0.type = veth
+lxc.net.0.link = lxcbr0
+lxc.net.0.flags = up
+
+lxc.apparmor.profile = generated
+lxc.apparmor.allow_nesting = 1
+
+===== END =====
+2026-08-12T12:28:50+00:00

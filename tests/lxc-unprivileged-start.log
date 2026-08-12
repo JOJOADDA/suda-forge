@@ -1,0 +1,58 @@
+lxc-start suda-real 20260812123337.689 INFO     confile - ../src/lxc/confile.c:set_config_idmaps:2273 - Read uid map: type u nsid 0 hostid 100000 range 65536
+lxc-start suda-real 20260812123337.689 INFO     confile - ../src/lxc/confile.c:set_config_idmaps:2273 - Read uid map: type g nsid 0 hostid 100000 range 65536
+lxc-start suda-real 20260812123337.689 INFO     lsm - ../src/lxc/lsm/lsm.c:lsm_init_static:38 - Initialized LSM security driver nop
+lxc-start suda-real 20260812123337.689 DEBUG    seccomp - ../src/lxc/seccomp.c:parse_config_v2:656 - Host native arch is [3221225534]
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "reject_force_umount  # comment this to allow umount -f;  not recommended"
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:524 - Set seccomp rule to reject force umounts
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:524 - Set seccomp rule to reject force umounts
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:524 - Set seccomp rule to reject force umounts
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "[all]"
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "kexec_load errno 1"
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[246:kexec_load] action[327681:errno] arch[0]
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[246:kexec_load] action[327681:errno] arch[1073741827]
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[246:kexec_load] action[327681:errno] arch[1073741886]
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "open_by_handle_at errno 1"
+lxc-start suda-real 20260812123337.689 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[304:open_by_handle_at] action[327681:errno] arch[0]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[304:open_by_handle_at] action[327681:errno] arch[1073741827]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[304:open_by_handle_at] action[327681:errno] arch[1073741886]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "init_module errno 1"
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[175:init_module] action[327681:errno] arch[0]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[175:init_module] action[327681:errno] arch[1073741827]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[175:init_module] action[327681:errno] arch[1073741886]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "finit_module errno 1"
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[313:finit_module] action[327681:errno] arch[0]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[313:finit_module] action[327681:errno] arch[1073741827]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[313:finit_module] action[327681:errno] arch[1073741886]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "delete_module errno 1"
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[176:delete_module] action[327681:errno] arch[0]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[176:delete_module] action[327681:errno] arch[1073741827]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[176:delete_module] action[327681:errno] arch[1073741886]
+lxc-start suda-real 20260812123337.690 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:1017 - Merging compat seccomp contexts into main context
+lxc-start suda-real 20260812123337.690 INFO     start - ../src/lxc/start.c:lxc_init:881 - Container "suda-real" is initialized
+lxc-start suda-real 20260812123337.690 INFO     cgfsng - ../src/lxc/cgroups/cgfsng.c:cgfsng_monitor_create:1391 - The monitor process uses "lxc.monitor.suda-real" as cgroup
+lxc-start suda-real 20260812123337.705 DEBUG    storage - ../src/lxc/storage/storage.c:get_storage_by_name:209 - Detected rootfs type "dir"
+lxc-start suda-real 20260812123337.705 DEBUG    storage - ../src/lxc/storage/storage.c:get_storage_by_name:209 - Detected rootfs type "dir"
+lxc-start suda-real 20260812123337.705 INFO     cgfsng - ../src/lxc/cgroups/cgfsng.c:cgfsng_payload_create:1499 - The container process uses "lxc.payload.suda-real" as inner and "lxc.payload.suda-real" as limit cgroup
+lxc-start suda-real 20260812123337.705 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWUSER
+lxc-start suda-real 20260812123337.705 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWNS
+lxc-start suda-real 20260812123337.705 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWPID
+lxc-start suda-real 20260812123337.705 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWUTS
+lxc-start suda-real 20260812123337.705 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWIPC
+lxc-start suda-real 20260812123337.705 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWCGROUP
+lxc-start suda-real 20260812123337.705 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved user namespace via fd 16 and stashed path as user:/proc/13108/fd/16
+lxc-start suda-real 20260812123337.705 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved mnt namespace via fd 17 and stashed path as mnt:/proc/13108/fd/17
+lxc-start suda-real 20260812123337.705 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved pid namespace via fd 18 and stashed path as pid:/proc/13108/fd/18
+lxc-start suda-real 20260812123337.705 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved uts namespace via fd 19 and stashed path as uts:/proc/13108/fd/19
+lxc-start suda-real 20260812123337.706 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved ipc namespace via fd 20 and stashed path as ipc:/proc/13108/fd/20
+lxc-start suda-real 20260812123337.706 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved cgroup namespace via fd 21 and stashed path as cgroup:/proc/13108/fd/21
+lxc-start suda-real 20260812123337.706 DEBUG    conf - ../src/lxc/conf.c:idmaptool_on_path_and_privileged:3547 - The binary "/usr/bin/newuidmap" does have the setuid bit set
+lxc-start suda-real 20260812123337.706 DEBUG    conf - ../src/lxc/conf.c:idmaptool_on_path_and_privileged:3547 - The binary "/usr/bin/newgidmap" does have the setuid bit set
+lxc-start suda-real 20260812123337.706 DEBUG    conf - ../src/lxc/conf.c:lxc_map_ids:3632 - Functional newuidmap and newgidmap binary found
+lxc-start suda-real 20260812123337.708 ERROR    conf - ../src/lxc/conf.c:lxc_map_ids:3699 - newuidmap failed to write mapping "newuidmap: uid range [0-65536) -> [100000-165536) not allowed": newuidmap 13109 0 100000 65536
+lxc-start suda-real 20260812123337.708 ERROR    start - ../src/lxc/start.c:lxc_spawn:1788 - Failed to set up id mapping.
+lxc-start suda-real 20260812123337.708 DEBUG    network - ../src/lxc/network.c:lxc_delete_network:4173 - Deleted network devices
+lxc-start suda-real 20260812123337.708 ERROR    start - ../src/lxc/start.c:__lxc_start:2107 - Failed to spawn container "suda-real"
+lxc-start suda-real 20260812123337.708 WARN     start - ../src/lxc/start.c:lxc_abort:1036 - No such process - Failed to send SIGKILL via pidfd 15 for process 13109
+lxc-start suda-real 20260812123337.708 INFO     conf - ../src/lxc/conf.c:run_script_argv:338 - Executing script "/usr/share/lxcfs/lxc.reboot.hook" for container "suda-real", config section "lxc"
+lxc-start suda-real 20260812123338.211 ERROR    lxc_start - ../src/lxc/tools/lxc_start.c:main:306 - The container failed to start
+lxc-start suda-real 20260812123338.211 ERROR    lxc_start - ../src/lxc/tools/lxc_start.c:main:311 - Additional information can be obtained by setting the --logfile and --logpriority options

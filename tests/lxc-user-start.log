@@ -1,0 +1,71 @@
+lxc-start suda-user 20260812123838.593 INFO     utils - ../src/lxc/utils.c:get_rundir:262 - XDG_RUNTIME_DIR isn't set in the environment
+lxc-start suda-user 20260812123838.594 INFO     confile - ../src/lxc/confile.c:set_config_idmaps:2273 - Read uid map: type u nsid 0 hostid 100000 range 65536
+lxc-start suda-user 20260812123838.594 INFO     confile - ../src/lxc/confile.c:set_config_idmaps:2273 - Read uid map: type g nsid 0 hostid 100000 range 65536
+lxc-start suda-user 20260812123838.594 INFO     lxccontainer - ../src/lxc/lxccontainer.c:do_lxcapi_start:996 - Failed to set process title to [lxc monitor] /home/ubuntu/.local/share/lxc suda-user
+lxc-start suda-user 20260812123838.594 DEBUG    lxccontainer - ../src/lxc/lxccontainer.c:wait_on_daemonized_start:859 - First child 13440 exited
+lxc-start suda-user 20260812123838.594 INFO     lsm - ../src/lxc/lsm/lsm.c:lsm_init_static:38 - Initialized LSM security driver nop
+lxc-start suda-user 20260812123838.594 INFO     utils - ../src/lxc/utils.c:get_rundir:262 - XDG_RUNTIME_DIR isn't set in the environment
+lxc-start suda-user 20260812123838.595 INFO     cgfsng - ../src/lxc/cgroups/cgfsng.c:unified_hierarchy_delegated:3467 - Permission denied - The cgroup.threads file is not writable, skipping unified hierarchy
+lxc-start suda-user 20260812123838.595 DEBUG    seccomp - ../src/lxc/seccomp.c:parse_config_v2:656 - Host native arch is [3221225534]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "reject_force_umount  # comment this to allow umount -f;  not recommended"
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:524 - Set seccomp rule to reject force umounts
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:524 - Set seccomp rule to reject force umounts
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:524 - Set seccomp rule to reject force umounts
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "[all]"
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "kexec_load errno 1"
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[246:kexec_load] action[327681:errno] arch[0]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[246:kexec_load] action[327681:errno] arch[1073741827]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[246:kexec_load] action[327681:errno] arch[1073741886]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "open_by_handle_at errno 1"
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[304:open_by_handle_at] action[327681:errno] arch[0]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[304:open_by_handle_at] action[327681:errno] arch[1073741827]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[304:open_by_handle_at] action[327681:errno] arch[1073741886]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "init_module errno 1"
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[175:init_module] action[327681:errno] arch[0]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[175:init_module] action[327681:errno] arch[1073741827]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[175:init_module] action[327681:errno] arch[1073741886]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "finit_module errno 1"
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[313:finit_module] action[327681:errno] arch[0]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[313:finit_module] action[327681:errno] arch[1073741827]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[313:finit_module] action[327681:errno] arch[1073741886]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:807 - Processing "delete_module errno 1"
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding native rule for syscall[176:delete_module] action[327681:errno] arch[0]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[176:delete_module] action[327681:errno] arch[1073741827]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:do_resolve_add_rule:564 - Adding compat rule for syscall[176:delete_module] action[327681:errno] arch[1073741886]
+lxc-start suda-user 20260812123838.595 INFO     seccomp - ../src/lxc/seccomp.c:parse_config_v2:1017 - Merging compat seccomp contexts into main context
+lxc-start suda-user 20260812123838.595 INFO     start - ../src/lxc/start.c:lxc_init:881 - Container "suda-user" is initialized
+lxc-start suda-user 20260812123838.595 DEBUG    storage - ../src/lxc/storage/storage.c:get_storage_by_name:209 - Detected rootfs type "dir"
+lxc-start suda-user 20260812123838.595 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWUSER
+lxc-start suda-user 20260812123838.595 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWNS
+lxc-start suda-user 20260812123838.595 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWPID
+lxc-start suda-user 20260812123838.595 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWUTS
+lxc-start suda-user 20260812123838.595 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWIPC
+lxc-start suda-user 20260812123838.595 INFO     start - ../src/lxc/start.c:lxc_spawn:1762 - Cloned CLONE_NEWCGROUP
+lxc-start suda-user 20260812123838.595 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved user namespace via fd 15 and stashed path as user:/proc/13441/fd/15
+lxc-start suda-user 20260812123838.595 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved mnt namespace via fd 16 and stashed path as mnt:/proc/13441/fd/16
+lxc-start suda-user 20260812123838.595 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved pid namespace via fd 17 and stashed path as pid:/proc/13441/fd/17
+lxc-start suda-user 20260812123838.595 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved uts namespace via fd 18 and stashed path as uts:/proc/13441/fd/18
+lxc-start suda-user 20260812123838.595 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved ipc namespace via fd 19 and stashed path as ipc:/proc/13441/fd/19
+lxc-start suda-user 20260812123838.595 DEBUG    start - ../src/lxc/start.c:lxc_try_preserve_namespace:139 - Preserved cgroup namespace via fd 20 and stashed path as cgroup:/proc/13441/fd/20
+lxc-start suda-user 20260812123838.595 DEBUG    conf - ../src/lxc/conf.c:idmaptool_on_path_and_privileged:3547 - The binary "/usr/bin/newuidmap" does have the setuid bit set
+lxc-start suda-user 20260812123838.595 DEBUG    conf - ../src/lxc/conf.c:idmaptool_on_path_and_privileged:3547 - The binary "/usr/bin/newgidmap" does have the setuid bit set
+lxc-start suda-user 20260812123838.595 DEBUG    conf - ../src/lxc/conf.c:lxc_map_ids:3632 - Functional newuidmap and newgidmap binary found
+lxc-start suda-user 20260812123838.602 INFO     start - ../src/lxc/start.c:do_start:1104 - Unshared CLONE_NEWNET
+lxc-start suda-user 20260812123838.602 NOTICE   utils - ../src/lxc/utils.c:lxc_drop_groups:1367 - Dropped supplimentary groups
+lxc-start suda-user 20260812123838.602 NOTICE   utils - ../src/lxc/utils.c:lxc_switch_uid_gid:1343 - Switched to gid 0
+lxc-start suda-user 20260812123838.602 NOTICE   utils - ../src/lxc/utils.c:lxc_switch_uid_gid:1352 - Switched to uid 0
+lxc-start suda-user 20260812123838.602 ERROR    start - ../src/lxc/start.c:print_top_failing_dir:99 - Permission denied - Could not access /home/ubuntu. Please grant it x access, or add an ACL for the container root
+lxc-start suda-user 20260812123838.602 ERROR    sync - ../src/lxc/sync.c:sync_wait:34 - An error occurred in another process (expected sequence number 1)
+lxc-start suda-user 20260812123838.602 DEBUG    network - ../src/lxc/network.c:lxc_delete_network_unpriv:3159 - Cannot not guarantee safe deletion of network devices. Manual cleanup maybe needed
+lxc-start suda-user 20260812123838.602 DEBUG    network - ../src/lxc/network.c:lxc_delete_network:4171 - Failed to delete network devices
+lxc-start suda-user 20260812123838.602 INFO     utils - ../src/lxc/utils.c:get_rundir:262 - XDG_RUNTIME_DIR isn't set in the environment
+lxc-start suda-user 20260812123838.602 ERROR    lxccontainer - ../src/lxc/lxccontainer.c:wait_on_daemonized_start:878 - Received container state "ABORTING" instead of "RUNNING"
+lxc-start suda-user 20260812123838.602 ERROR    lxc_start - ../src/lxc/tools/lxc_start.c:main:306 - The container failed to start
+lxc-start suda-user 20260812123838.602 ERROR    lxc_start - ../src/lxc/tools/lxc_start.c:main:309 - To get more details, run the container in foreground mode
+lxc-start suda-user 20260812123838.602 ERROR    lxc_start - ../src/lxc/tools/lxc_start.c:main:311 - Additional information can be obtained by setting the --logfile and --logpriority options
+lxc-start suda-user 20260812123838.602 ERROR    start - ../src/lxc/start.c:__lxc_start:2107 - Failed to spawn container "suda-user"
+lxc-start suda-user 20260812123838.602 INFO     utils - ../src/lxc/utils.c:get_rundir:262 - XDG_RUNTIME_DIR isn't set in the environment
+lxc-start suda-user 20260812123838.602 WARN     start - ../src/lxc/start.c:lxc_abort:1036 - No such process - Failed to send SIGKILL via pidfd 14 for process 13442
+lxc-start suda-user 20260812123838.602 INFO     utils - ../src/lxc/utils.c:get_rundir:262 - XDG_RUNTIME_DIR isn't set in the environment
+lxc-start suda-user 20260812123838.602 INFO     utils - ../src/lxc/utils.c:get_rundir:262 - XDG_RUNTIME_DIR isn't set in the environment
+lxc-start suda-user 20260812123838.603 INFO     conf - ../src/lxc/conf.c:run_script_argv:338 - Executing script "/usr/share/lxcfs/lxc.reboot.hook" for container "suda-user", config section "lxc"

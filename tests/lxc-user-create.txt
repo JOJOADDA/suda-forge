@@ -1,0 +1,12 @@
+lxc-create: suda-user: ../src/lxc/parse.c: lxc_file_for_each_line_mmap: 78 No such file or directory - Failed to open file "/home/ubuntu/.config/lxc/default.conf"
+lxc-create: suda-user: ../src/lxc/conf.c: userns_exec_mapped_root: 5450 No uid mapping for container root
+lxc-create: suda-user: ../src/lxc/lxccontainer.c: do_storage_create: 1305 Error chowning "/home/ubuntu/.local/share/lxc/suda-user/rootfs" to container root
+lxc-create: suda-user: ../src/lxc/conf.c: suggest_default_idmap: 5775 You must either run as root, or define uid mappings
+lxc-create: suda-user: ../src/lxc/conf.c: suggest_default_idmap: 5776 To pass uid mappings to lxc-create, you could create
+lxc-create: suda-user: ../src/lxc/conf.c: suggest_default_idmap: 5777 ~/.config/lxc/default.conf:
+lxc-create: suda-user: ../src/lxc/conf.c: suggest_default_idmap: 5778 lxc.include = /etc/lxc/default.conf
+lxc-create: suda-user: ../src/lxc/conf.c: suggest_default_idmap: 5779 lxc.idmap = u 0 100000 65536
+lxc-create: suda-user: ../src/lxc/conf.c: suggest_default_idmap: 5780 lxc.idmap = g 0 100000 65536
+lxc-create: suda-user: ../src/lxc/lxccontainer.c: __lxcapi_create: 1883 Failed to create (none) storage for suda-user
+lxc-create: suda-user: ../src/lxc/utils.c: wait_exited: 346 Child terminated with error 1
+lxc-create: suda-user: ../src/lxc/tools/lxc_create.c: main: 317 Failed to create container suda-user
