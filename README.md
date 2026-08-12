@@ -14,6 +14,7 @@ The repository currently contains completed Phases 1–8:
 | 6 | SUDA AI Fabric, local runtime adapters, hardware/GPU discovery, inference, lifecycle, routing integration | Complete |
 | 7 | Hosting and Deployment Fabric, previews, domains, certificates, health, rollback | Complete |
 | 8 | Project Intelligence, deterministic architecture selection, versioned environment manifests, resumable provisioning, persistence, APIs, SSE, Create Project wizard | Complete |
+| 9 | Shared Infrastructure, Project Computer lifecycle, runtime capabilities, Tool/Version/Artifact registries, integrity-checked global cache, environment resolution, readiness UX | Complete |
 
 ## Architecture
 
@@ -108,6 +109,12 @@ The Phase 8 API includes `POST /api/projects/{project}/intelligence/analyze`, `P
 
 Project Intelligence is deterministic by design. It does not silently replace an incompatible user override, and it records selected candidates, rejected alternatives, reasons, manifest fingerprints, and required verification evidence. Phase 8 composes with the existing Orchestration and Verification layers; it does not introduce microservices, Kubernetes, or a second runtime boundary.
 
+## Phase 9 Shared Infrastructure and Project Computer
+
+Phase 9 makes Project Computer a first-class persisted entity with lifecycle operations through `RuntimeProvider`, explicit runtime capability checks, progressive readiness states, resource insufficiency rejection, environment fingerprints, and environment drift comparison. It adds a shared Tool Registry, version-aware resolution, Artifact identity and checksum verification, a global deduplicated cache boundary, cache invalidation, and manifest-to-tool resolution events. The API includes Project Computer lifecycle endpoints, shared tool/version endpoints, cache statistics, and project-scoped environment resolve/verify/repair operations. The existing Create Project wizard now surfaces cache reasoning, environment resolutions, Project Computer status, readiness, and capability evidence.
+
+The current restricted Docker host still cannot provide real LXC, GPU, browser, or unavailable agent binaries. Phase 9 therefore preserves explicit `BLOCKED_BY_ENVIRONMENT`, `UNSUPPORTED`, `FAILED`, and `INSUFFICIENT_RESOURCES` outcomes. It does not claim a Project Computer is ready merely because a database record or installation step exists.
+
 ## Out of scope until later phases
 
-RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, and Phase 9 work are intentionally not implemented.
+RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, final product-wide visual redesign, full IDE replacement, and Phase 10 work are intentionally not implemented.

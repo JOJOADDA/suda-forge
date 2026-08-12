@@ -23,9 +23,11 @@ import (
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
 	"suda-forge/internal/postgres"
+	"suda-forge/internal/projectcomputer"
 	"suda-forge/internal/projectintelligence"
 	"suda-forge/internal/provisioning"
 	"suda-forge/internal/routing"
+	"suda-forge/internal/sharedinfra"
 	"suda-forge/internal/verification"
 )
 
@@ -124,7 +126,15 @@ func main() {
 	provisioningManager.Store = provisioning.PostgresStore{DB: db}
 	provisioningManager.Events = provisioningEventSink{Bus: eventBus}
 	provisioningManager.Cache = provisioning.NewMemoryCache()
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager}
+	projectComputerManager := projectcomputer.NewManager(time.Now)
+	projectComputerManager.Provider = runtimeProvider
+	projectComputerStore := projectcomputer.PostgresStore{DB: db}
+	projectComputerManager.Store = projectComputerStore
+	projectComputerManager.Events = projectComputerEventSink{Bus: eventBus}
+	toolRegistry := sharedinfra.DefaultRegistry()
+	globalCache := sharedinfra.NewCache(time.Now)
+	environmentResolver := sharedinfra.Resolver{Registry: toolRegistry, Cache: globalCache, Platform: "linux", Architecture: "amd64"}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

@@ -14,9 +14,11 @@ import (
 	"suda-forge/internal/events"
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
+	"suda-forge/internal/projectcomputer"
 	"suda-forge/internal/projectintelligence"
 	"suda-forge/internal/provisioning"
 	"suda-forge/internal/routing"
+	"suda-forge/internal/sharedinfra"
 	"suda-forge/internal/verification"
 
 	"suda-forge/domain/project"
@@ -26,33 +28,37 @@ import (
 )
 
 type Server struct {
-	Projects           postgres.Projects
-	Lifecycle          lifecycle.Service
-	Events             *events.Bus
-	AgentService       *agent.Service
-	AgentRegistry      *agent.Registry
-	ModelRegistry      *model.Registry
-	Router             *routing.Router
-	RoutingModels      []routing.ModelProfile
-	RoutingStore       *routing.Store
-	Orchestrator       *orchestration.Orchestrator
-	WorkflowStore      *orchestration.PostgresStore
-	VerificationStore  *verification.Store
-	VerificationEngine *verification.Engine
-	RepairLoop         *verification.RepairLoop
-	RuntimeProvider    runtime.Provider
-	AIManager          *aifabric.Manager
-	AIStore            *aifabric.Store
-	DeploymentManager  *deployment.Manager
-	DeploymentStore    *deployment.Store
-	ServiceDiscovery   deployment.ServiceDiscovery
-	PortRegistry       deployment.PortRegistry
-	ProxyProvider      deployment.ProxyProvider
-	Infrastructure     *deployment.Catalog
-	Intelligence       *projectintelligence.Engine
-	IntelligenceStore  *projectintelligence.Store
-	EnvironmentStore   *environment.Store
-	Provisioning       *provisioning.Manager
+	Projects            postgres.Projects
+	Lifecycle           lifecycle.Service
+	Events              *events.Bus
+	AgentService        *agent.Service
+	AgentRegistry       *agent.Registry
+	ModelRegistry       *model.Registry
+	Router              *routing.Router
+	RoutingModels       []routing.ModelProfile
+	RoutingStore        *routing.Store
+	Orchestrator        *orchestration.Orchestrator
+	WorkflowStore       *orchestration.PostgresStore
+	VerificationStore   *verification.Store
+	VerificationEngine  *verification.Engine
+	RepairLoop          *verification.RepairLoop
+	RuntimeProvider     runtime.Provider
+	AIManager           *aifabric.Manager
+	AIStore             *aifabric.Store
+	DeploymentManager   *deployment.Manager
+	DeploymentStore     *deployment.Store
+	ServiceDiscovery    deployment.ServiceDiscovery
+	PortRegistry        deployment.PortRegistry
+	ProxyProvider       deployment.ProxyProvider
+	Infrastructure      *deployment.Catalog
+	Intelligence        *projectintelligence.Engine
+	IntelligenceStore   *projectintelligence.Store
+	EnvironmentStore    *environment.Store
+	Provisioning        *provisioning.Manager
+	ProjectComputers    *projectcomputer.Manager
+	ToolRegistry        *sharedinfra.Registry
+	GlobalCache         *sharedinfra.Cache
+	EnvironmentResolver sharedinfra.Resolver
 }
 
 func (s Server) Handler() http.Handler {
@@ -78,6 +84,24 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/provisioning/{run}/cancel", s.cancelProvisioning)
 	mux.HandleFunc("POST /api/provisioning/{run}/resume", s.resumeProvisioning)
 	mux.HandleFunc("POST /api/provisioning/{run}/cleanup", s.cleanupProvisioning)
+	mux.HandleFunc("GET /api/project-computers", s.listProjectComputers)
+	mux.HandleFunc("POST /api/project-computers", s.createProjectComputer)
+	mux.HandleFunc("GET /api/project-computers/{id}", s.getProjectComputer)
+	mux.HandleFunc("POST /api/project-computers/{id}/start", s.startProjectComputer)
+	mux.HandleFunc("POST /api/project-computers/{id}/stop", s.stopProjectComputer)
+	mux.HandleFunc("POST /api/project-computers/{id}/restart", s.restartProjectComputer)
+	mux.HandleFunc("POST /api/project-computers/{id}/verify", s.verifyProjectComputer)
+	mux.HandleFunc("POST /api/project-computers/{id}/rebuild", s.rebuildProjectComputer)
+	mux.HandleFunc("DELETE /api/project-computers/{id}", s.destroyProjectComputer)
+	mux.HandleFunc("GET /api/tools", s.listSharedTools)
+	mux.HandleFunc("GET /api/tools/{id}", s.getSharedTool)
+	mux.HandleFunc("GET /api/tools/{id}/versions", s.listSharedToolVersions)
+	mux.HandleFunc("GET /api/cache", s.cacheOverview)
+	mux.HandleFunc("GET /api/cache/artifacts", s.cacheOverview)
+	mux.HandleFunc("GET /api/cache/stats", s.cacheStats)
+	mux.HandleFunc("POST /api/projects/{project}/environment/resolve", s.resolveEnvironment)
+	mux.HandleFunc("POST /api/projects/{project}/environment/verify", s.verifyProjectEnvironment)
+	mux.HandleFunc("POST /api/projects/{project}/environment/repair", s.repairProjectEnvironment)
 
 	mux.HandleFunc("POST /api/projects/{project}/plans", s.createPlan)
 	mux.HandleFunc("POST /api/projects/{project}/workflows", s.createWorkflow)

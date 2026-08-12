@@ -51,10 +51,15 @@ func FingerprintFor(m Manifest) string {
 		Frameworks                           []ToolRequirement
 		BuildTools                           []ToolRequirement
 		TestTools                            []ToolRequirement
+		SDKs                                 []ToolRequirement
+		SystemPackages                       []ToolRequirement
+		EnvironmentVars                      []EnvironmentVariable
+		Ports                                []PortRequirement
 		Browsers                             []BrowserRequirement
 		Agents                               []AgentRequirement
 		Resources                            ResourceRequirement
-	}{m.Version, m.BaseImage, m.OS, m.Architecture, m.Languages, m.PackageManagers, m.Frameworks, m.BuildTools, m.TestTools, m.Browsers, m.AgentCLIs, m.Resources})
+		Profile                              Profile
+	}{m.Version, m.BaseImage, m.OS, m.Architecture, m.Languages, m.PackageManagers, m.Frameworks, m.BuildTools, m.TestTools, m.SDKs, m.SystemPackages, m.EnvironmentVars, m.Ports, m.Browsers, m.AgentCLIs, m.Resources, m.Profile})
 	sum := sha256.Sum256(raw)
 	return "sha256:" + hex.EncodeToString(sum[:])
 }
@@ -75,11 +80,17 @@ func BuildFingerprint(m Manifest, now time.Time) Fingerprint {
 	for _, v := range m.TestTools {
 		f.Tools[v.Name] = v.Version
 	}
+	for _, v := range m.SDKs {
+		f.Tools[v.Name] = v.Version
+	}
+	for _, v := range m.SystemPackages {
+		f.SystemPackages = append(f.SystemPackages, v.Name+"@"+v.Version)
+	}
 	for _, v := range m.AgentCLIs {
 		f.Agents[v.AgentID] = v.Version
 	}
 	if len(m.Browsers) > 0 {
-		f.Browser = m.Browsers[0].Name
+		f.Browser = m.Browsers[0].Name + "@" + m.Browsers[0].Version
 	}
 	return f
 }

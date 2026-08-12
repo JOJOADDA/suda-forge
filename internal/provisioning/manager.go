@@ -28,6 +28,9 @@ func NewManager(now func() time.Time) *Manager {
 	return &Manager{Now: now, runs: map[ID]Run{}}
 }
 func (m *Manager) Plan(projectID string, manifest environment.Manifest) (Run, error) {
+	return m.PlanWithRuntime(projectID, manifest, "")
+}
+func (m *Manager) PlanWithRuntime(projectID string, manifest environment.Manifest, runtimeID string) (Run, error) {
 	if projectID == "" || manifest.ProjectID != projectID {
 		return Run{}, errors.New("project ownership mismatch")
 	}
@@ -36,7 +39,7 @@ func (m *Manager) Plan(projectID string, manifest environment.Manifest) (Run, er
 		return Run{}, err
 	}
 	now := m.Now().UTC()
-	run := Run{ID: ID(fmt.Sprintf("prov_%s_%d", projectID, now.UnixNano())), ProjectID: projectID, Manifest: manifest, Status: Planned, Steps: steps, StartedAt: now}
+	run := Run{ID: ID(fmt.Sprintf("prov_%s_%d", projectID, now.UnixNano())), ProjectID: projectID, Manifest: manifest, RuntimeID: runtimeID, Status: Planned, Steps: steps, StartedAt: now}
 	m.mu.Lock()
 	m.runs[run.ID] = run
 	m.mu.Unlock()

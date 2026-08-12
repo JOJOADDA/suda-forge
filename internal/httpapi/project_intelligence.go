@@ -86,12 +86,24 @@ func (s Server) planProvisioning(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "provisioning unavailable"})
 		return
 	}
-	var m environment.Manifest
-	if err := json.NewDecoder(r.Body).Decode(&m); err != nil {
+	var raw json.RawMessage
+	if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
 		return
 	}
-	run, err := s.Provisioning.Plan(r.PathValue("project"), m)
+	var envelope struct {
+		Manifest  environment.Manifest `json:"manifest"`
+		RuntimeID string               `json:"runtime_id"`
+	}
+	_ = json.Unmarshal(raw, &envelope)
+	m := envelope.Manifest
+	if m.ID == "" {
+		if err := json.Unmarshal(raw, &m); err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+			return
+		}
+	}
+	run, err := s.Provisioning.PlanWithRuntime(r.PathValue("project"), m, envelope.RuntimeID)
 	if err != nil {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 		return
