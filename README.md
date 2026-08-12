@@ -15,6 +15,7 @@ The repository currently contains completed Phases 1–8:
 | 7 | Hosting and Deployment Fabric, previews, domains, certificates, health, rollback | Complete |
 | 8 | Project Intelligence, deterministic architecture selection, versioned environment manifests, resumable provisioning, persistence, APIs, SSE, Create Project wizard | Complete |
 | 9 | Shared Infrastructure, Project Computer lifecycle, runtime capabilities, Tool/Version/Artifact registries, integrity-checked global cache, environment resolution, readiness UX | Complete |
+| 10 | Product Experience, Design Intelligence, structured Project Knowledge Graph, Agent Constitution, governance, context assembly, autonomous-loop composition, Visual QA boundary, and activity UX | Complete |
 
 ## Architecture
 
@@ -85,7 +86,7 @@ bash scripts/check-architecture.sh
 
 The real LXC and local-AI runtime checks are environment-dependent. Deterministic adapter tests use test-only HTTP servers and never create fake production inference, fake GPU success, or fake runtime success.
 
-Phase reports and raw verification outputs are kept in `PHASE4_STATUS.md`, `PHASE5_STATUS.md`, `PHASE6_STATUS.md`, [`PHASE8_STATUS.md`](./PHASE8_STATUS.md), [`PHASE9_STATUS.md`](./PHASE9_STATUS.md), and `tests/`.
+Phase reports and raw verification outputs are kept in `PHASE4_STATUS.md`, `PHASE5_STATUS.md`, `PHASE6_STATUS.md`, [`PHASE8_STATUS.md`](./PHASE8_STATUS.md), [`PHASE9_STATUS.md`](./PHASE9_STATUS.md), [`PHASE10_STATUS.md`](./PHASE10_STATUS.md), [`PHASE10_IMPLEMENTATION_MAP.md`](./PHASE10_IMPLEMENTATION_MAP.md), and `tests/`.
 
 ## Security boundaries
 
@@ -115,6 +116,12 @@ Phase 9 makes Project Computer a first-class persisted entity with lifecycle ope
 
 The current restricted Docker host still cannot provide real LXC, GPU, browser, or unavailable agent binaries. Phase 9 therefore preserves explicit `BLOCKED_BY_ENVIRONMENT`, `UNSUPPORTED`, `FAILED`, and `INSUFFICIENT_RESOURCES` outcomes. It does not claim a Project Computer is ready merely because a database record or installation step exists.
 
+## Phase 10 Product Experience and Intelligence Composition
+
+Phase 10 adds the product experience and intelligence composition layer without rebuilding any Phase 1–9 subsystem. It provides Design Intelligence and structured Design System persistence, a queryable Project Knowledge Graph, Agent Constitution and policy evaluation, layered Context Assembly, session recovery projections, graph-based impact analysis, autonomous-loop delegation to existing orchestration and verification, a truthful Visual QA boundary, and project activity projection through the existing event bus and SSE.
+
+The Phase 10 status report and implementation map are available in [`PHASE10_STATUS.md`](./PHASE10_STATUS.md) and [`PHASE10_IMPLEMENTATION_MAP.md`](./PHASE10_IMPLEMENTATION_MAP.md).
+
 ## Out of scope until later phases
 
-RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, final product-wide visual redesign, full IDE replacement, and Phase 10 work are intentionally not implemented.
+RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, full IDE replacement, and Phase 11 work are intentionally not implemented.

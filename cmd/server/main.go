@@ -15,14 +15,18 @@ import (
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
 	"suda-forge/internal/config"
+	"suda-forge/internal/constitution"
 	"suda-forge/internal/deployment"
+	"suda-forge/internal/designintelligence"
 	"suda-forge/internal/environment"
 	"suda-forge/internal/events"
 	"suda-forge/internal/httpapi"
+	"suda-forge/internal/knowledge"
 	"suda-forge/internal/lifecycle"
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
 	"suda-forge/internal/postgres"
+	"suda-forge/internal/productexperience"
 	"suda-forge/internal/projectcomputer"
 	"suda-forge/internal/projectintelligence"
 	"suda-forge/internal/provisioning"
@@ -134,7 +138,19 @@ func main() {
 	toolRegistry := sharedinfra.DefaultRegistry()
 	globalCache := sharedinfra.NewCache(time.Now)
 	environmentResolver := sharedinfra.Resolver{Registry: toolRegistry, Cache: globalCache, Platform: "linux", Architecture: "amd64"}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver}
+	designEngine := designintelligence.NewEngine(time.Now)
+	designStore := designintelligence.PostgresStore{DB: db}
+	knowledgeStore := knowledge.NewMemoryStore(time.Now)
+	constitutions := map[string]constitution.Constitution{}
+	constitutionStore := constitution.PostgresStore{DB: db}
+	productExperience := productexperience.NewService(time.Now)
+	productExperience.Knowledge = knowledgeStore
+	productExperience.Constitutions = constitutions
+	productStore := productexperience.PostgresStore{DB: db}
+	activityLog := productexperience.NewActivityLog(time.Now)
+	activityLog.Store = productStore
+	go forwardProductActivity(context.Background(), eventBus, activityLog)
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: map[string]designintelligence.DesignSystem{}, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

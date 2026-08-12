@@ -9,11 +9,15 @@ import (
 
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
+	"suda-forge/internal/constitution"
 	"suda-forge/internal/deployment"
+	"suda-forge/internal/designintelligence"
 	"suda-forge/internal/environment"
 	"suda-forge/internal/events"
+	"suda-forge/internal/knowledge"
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
+	"suda-forge/internal/productexperience"
 	"suda-forge/internal/projectcomputer"
 	"suda-forge/internal/projectintelligence"
 	"suda-forge/internal/provisioning"
@@ -59,6 +63,15 @@ type Server struct {
 	ToolRegistry        *sharedinfra.Registry
 	GlobalCache         *sharedinfra.Cache
 	EnvironmentResolver sharedinfra.Resolver
+	DesignIntelligence  *designintelligence.Engine
+	DesignStore         *designintelligence.PostgresStore
+	DesignSystems       map[string]designintelligence.DesignSystem
+	KnowledgeStore      knowledge.Store
+	ProductExperience   *productexperience.Service
+	Constitutions       map[string]constitution.Constitution
+	ConstitutionStore   *constitution.PostgresStore
+	ActivityLog         *productexperience.ActivityLog
+	VisualQA            productexperience.VisualQABoundary
 }
 
 func (s Server) Handler() http.Handler {
@@ -102,6 +115,22 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/projects/{project}/environment/resolve", s.resolveEnvironment)
 	mux.HandleFunc("POST /api/projects/{project}/environment/verify", s.verifyProjectEnvironment)
 	mux.HandleFunc("POST /api/projects/{project}/environment/repair", s.repairProjectEnvironment)
+	mux.HandleFunc("POST /api/projects/{project}/design/analyze", s.analyzeDesign)
+	mux.HandleFunc("GET /api/projects/{project}/design", s.getDesign)
+	mux.HandleFunc("GET /api/projects/{project}/knowledge", s.getKnowledge)
+	mux.HandleFunc("GET /api/projects/{project}/knowledge/graph", s.getKnowledge)
+	mux.HandleFunc("POST /api/projects/{project}/knowledge/nodes", s.upsertKnowledgeNode)
+	mux.HandleFunc("POST /api/projects/{project}/knowledge/edges", s.upsertKnowledgeEdge)
+	mux.HandleFunc("POST /api/projects/{project}/impact/analyze", s.analyzeImpact)
+	mux.HandleFunc("GET /api/projects/{project}/agent-context", s.getAgentContext)
+	mux.HandleFunc("POST /api/projects/{project}/autonomous-loop/plan", s.planAutonomousLoop)
+	mux.HandleFunc("POST /api/projects/{project}/governance/evaluate", s.evaluateGovernance)
+	mux.HandleFunc("POST /api/projects/{project}/constitutions", s.createConstitution)
+	mux.HandleFunc("GET /api/projects/{project}/constitutions/{agent}", s.getConstitution)
+
+	mux.HandleFunc("GET /api/projects/{project}/activity", s.getProjectActivity)
+	mux.HandleFunc("GET /api/projects/{project}/activity/stream", s.projectActivityStream)
+	mux.HandleFunc("POST /api/projects/{project}/visual-qa", s.runVisualQA)
 
 	mux.HandleFunc("POST /api/projects/{project}/plans", s.createPlan)
 	mux.HandleFunc("POST /api/projects/{project}/workflows", s.createWorkflow)
