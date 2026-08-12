@@ -2,7 +2,7 @@
     encode zstd gzip
 
     # The Go server owns JSON APIs, health endpoints, and the product activity SSE stream.
-    @backend path /api/* /healthz /health /ready /events
+    @backend path /api/* /auth/* /healthz /health /ready /events
     reverse_proxy @backend 127.0.0.1:8080
 
     # Production frontend output. SPA fallback keeps client-side views routable.
