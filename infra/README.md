@@ -28,3 +28,41 @@ Caddy serves the built frontend and proxies `/api/*`, `/healthz`, `/health`, `/r
 ## Important boundary
 
 The service currently runs as root because SUDA FORGE's LXC runtime provider has not yet been converted to a delegated non-root service account. This is a temporary operational requirement and must be replaced before a security-sensitive public deployment.
+
+
+## Automated deployment
+
+`infra/deploy.sh` يبني release artifact من working tree نظيف، يشغّل اختبارات Go وفحص TypeScript وبناء Vite، ثم يرفع artifact إلى خادم خارجي عبر SSH. على الخادم، ينفذ `infra/remote-activate.sh` التحقق من checksum، تطبيق migrations، إنشاء release مستقل، تبديل symlink باسم `current`، إعادة تشغيل systemd، تحديث Caddy، ثم health gate.
+
+يتطلب deploy الآلي أن يكون المستخدم المحلي قادرًا على الاتصال بالخادم دون تفاعل عبر SSH، وأن يملك المستخدم البعيد صلاحية `sudo -n` لتشغيل سكربت التفعيل. يجب إنشاء `/etc/suda-forge/suda-forge.env` على الخادم مسبقًا باستخدام `infra/install.sh` ومراجعة `DATABASE_URL` والأسرار يدويًا.
+
+مثال نشر كامل:
+
+```bash
+infra/deploy.sh \
+  --host server.example.com \
+  --user ubuntu \
+  --hostname suda.example.com
+```
+
+فحص البناء والتغليف دون رفع أو تغيير الخادم:
+
+```bash
+infra/deploy.sh \
+  --host server.example.com \
+  --dry-run
+```
+
+إذا كان Go أو Node أو npm registry غير متاح في بيئة البناء، يمكن تجاوز الاختبارات فقط عند وجود سبب تشغيلي واضح:
+
+```bash
+SUDA_SKIP_TESTS=1 infra/deploy.sh --host server.example.com
+```
+
+لا يطبق `SUDA_SKIP_TESTS=1` migrations أو يتجاوز health gate؛ فهو يتجاوز اختبار Go وtypecheck فقط مع استمرار بناء frontend. ولتجاوز migrations عمدًا استخدم `--skip-migrations` بعد التأكد من تطبيقها يدويًا.
+
+يحتفظ النظام بآخر releases تحت `/opt/suda-forge-releases` ويحتفظ افتراضيًا بثلاثة إصدارات. إذا فشل تشغيل systemd أو Caddy أو health check، يعيد `remote-activate.sh` symlink إلى الإصدار السابق ويعيد تشغيل الخدمة. migrations قاعدة البيانات forward-only؛ لا يتم التراجع عنها تلقائيًا، ولذلك يجب أخذ backup قبل نشر migration حساسة.
+
+## Server prerequisites
+
+يجب أن يتوفر على الخادم Ubuntu أو Debian، systemd، SSH، sudo، PostgreSQL، Go، Node.js، pnpm، curl، tar، sha256sum، وCaddy عند الحاجة إلى HTTPS. كما يجب أن يكون runtime الخاص بـ LXC مجهزًا مسبقًا إذا كانت Project Computers مطلوبة. التشغيل الحالي للخدمة يستخدم root بسبب حدود LXC، ولا ينبغي فتح الخدمة للعامة قبل إكمال فصل صلاحيات runtime والمصادقة والصلاحيات.
