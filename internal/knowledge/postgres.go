@@ -92,4 +92,5 @@ func (s PostgresStore) Neighbors(ctx context.Context, project string, id NodeID,
 	return out, rows.Err()
 }
 
+var _ Store = PostgresStore{}
 var _ = time.Time{}

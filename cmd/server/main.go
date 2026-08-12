@@ -101,7 +101,7 @@ func main() {
 	deploymentStore := deployment.Store{DB: db}
 	deploymentManager := deployment.NewManager(time.Now)
 	serviceDiscovery := deployment.RuntimeServiceDiscovery{Runtime: runtimeProvider}
-	portRegistry := deployment.NewMemoryPortRegistry()
+	portRegistry := deployment.PostgresPortRegistry{DB: db}
 	infrastructureCatalog := deployment.NewCatalog()
 	infrastructureCatalog.Certificates = deployment.CaddyCertificate{Proxy: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}}
 	deploymentManager.Runtime = runtimeProvider
@@ -129,28 +129,52 @@ func main() {
 	provisioningManager.Runtime = runtimeProvider
 	provisioningManager.Store = provisioning.PostgresStore{DB: db}
 	provisioningManager.Events = provisioningEventSink{Bus: eventBus}
-	provisioningManager.Cache = provisioning.NewMemoryCache()
 	projectComputerManager := projectcomputer.NewManager(time.Now)
 	projectComputerManager.Provider = runtimeProvider
 	projectComputerStore := projectcomputer.PostgresStore{DB: db}
 	projectComputerManager.Store = projectComputerStore
 	projectComputerManager.Events = projectComputerEventSink{Bus: eventBus}
 	toolRegistry := sharedinfra.DefaultRegistry()
+	sharedStore := sharedinfra.PostgresStore{DB: db}
+	loadedTools, loadErr := sharedStore.LoadTools(ctx)
+	if loadErr != nil {
+		logger.Error("shared infrastructure registry load failed", "error", loadErr)
+		os.Exit(1)
+	}
+	if len(loadedTools) > 0 {
+		if err := toolRegistry.Load(loadedTools); err != nil {
+			logger.Error("shared infrastructure registry hydrate failed", "error", err)
+			os.Exit(1)
+		}
+	} else {
+		for _, tool := range toolRegistry.List() {
+			if err := sharedStore.SaveTool(ctx, tool); err != nil {
+				logger.Error("shared infrastructure registry seed failed", "tool", tool.ID, "error", err)
+				os.Exit(1)
+			}
+		}
+	}
 	globalCache := sharedinfra.NewCache(time.Now)
+
 	environmentResolver := sharedinfra.Resolver{Registry: toolRegistry, Cache: globalCache, Platform: "linux", Architecture: "amd64"}
 	designEngine := designintelligence.NewEngine(time.Now)
 	designStore := designintelligence.PostgresStore{DB: db}
-	knowledgeStore := knowledge.NewMemoryStore(time.Now)
+	knowledgeStore := knowledge.PostgresStore{DB: db}
 	constitutions := map[string]constitution.Constitution{}
 	constitutionStore := constitution.PostgresStore{DB: db}
+	agentService.Guard = constitutionGuard{Constitutions: constitutions, Store: constitutionStore}
 	productExperience := productexperience.NewService(time.Now)
 	productExperience.Knowledge = knowledgeStore
 	productExperience.Constitutions = constitutions
+	productExperience.DesignStore = &designStore
+	productExperience.ConstitutionStore = constitutionStore
+	designSystems := map[string]designintelligence.DesignSystem{}
+	productExperience.DesignSystems = designSystems
 	productStore := productexperience.PostgresStore{DB: db}
 	activityLog := productexperience.NewActivityLog(time.Now)
 	activityLog.Store = productStore
 	go forwardProductActivity(context.Background(), eventBus, activityLog)
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: map[string]designintelligence.DesignSystem{}, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: designSystems, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, ProductStore: &productStore, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

@@ -158,3 +158,12 @@ func verifyChecksum(data []byte, expected string) bool {
 	expected = strings.TrimPrefix(expected, "sha256:")
 	return strings.EqualFold(actual, expected)
 }
+
+func (r *Registry) Load(tools []Tool) error {
+	for _, t := range tools {
+		if err := r.Register(t); err != nil {
+			return err
+		}
+	}
+	return nil
+}

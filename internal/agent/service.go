@@ -7,9 +7,13 @@ import (
 	"time"
 )
 
+type ExecutionGuard interface {
+	Authorize(context.Context, Session, Permission) error
+}
 type Service struct {
 	Store    Store
 	Adapters *Registry
+	Guard    ExecutionGuard
 	Now      func() time.Time
 }
 
@@ -38,6 +42,11 @@ func (s Service) Start(ctx context.Context, projectID string, id SessionID) (Ses
 		return Session{}, fmt.Errorf("agent adapter not registered: %s", session.AgentID)
 	}
 	now := s.Now()
+	if s.Guard != nil {
+		if err := s.Guard.Authorize(ctx, session, PermissionTerminalExecute); err != nil {
+			return Session{}, err
+		}
+	}
 	if err := session.Transition(SessionStarting, now); err != nil {
 		return Session{}, err
 	}

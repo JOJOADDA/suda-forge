@@ -1,6 +1,9 @@
 package knowledge
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type NodeID string
 type EdgeID string
@@ -70,8 +73,8 @@ type Graph struct {
 	Edges     []Edge `json:"edges"`
 }
 type Store interface {
-	UpsertNode(Node) (Node, error)
-	UpsertEdge(Edge) (Edge, error)
-	Graph(string) (Graph, error)
-	Neighbors(string, NodeID, EdgeType) ([]Node, error)
+	UpsertNode(context.Context, Node) (Node, error)
+	UpsertEdge(context.Context, Edge) (Edge, error)
+	Graph(context.Context, string) (Graph, error)
+	Neighbors(context.Context, string, NodeID, EdgeType) ([]Node, error)
 }

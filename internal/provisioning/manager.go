@@ -40,14 +40,14 @@ func (m *Manager) PlanWithRuntime(projectID string, manifest environment.Manifes
 	}
 	now := m.Now().UTC()
 	run := Run{ID: ID(fmt.Sprintf("prov_%s_%d", projectID, now.UnixNano())), ProjectID: projectID, Manifest: manifest, RuntimeID: runtimeID, Status: Planned, Steps: steps, StartedAt: now}
-	m.mu.Lock()
-	m.runs[run.ID] = run
-	m.mu.Unlock()
+	if err := m.save(context.Background(), run); err != nil {
+		return Run{}, err
+	}
 	m.emit(run, "environment.planned", "", "Provisioning plan created", 0)
 	return run, nil
 }
 func (m *Manager) Provision(ctx context.Context, id ID) (Run, error) {
-	run, err := m.get(id)
+	run, err := m.get(ctx, id)
 	if err != nil {
 		return Run{}, err
 	}
@@ -161,7 +161,7 @@ func agentBinary(m environment.Manifest) string {
 	}
 }
 func (m *Manager) RequestCancel(ctx context.Context, id ID) (Run, error) {
-	run, err := m.get(id)
+	run, err := m.get(ctx, id)
 	if err != nil {
 		return Run{}, err
 	}
@@ -174,7 +174,7 @@ func (m *Manager) RequestCancel(ctx context.Context, id ID) (Run, error) {
 	return run, nil
 }
 func (m *Manager) Resume(ctx context.Context, id ID) (Run, error) {
-	run, err := m.get(id)
+	run, err := m.get(ctx, id)
 	if err != nil {
 		return Run{}, err
 	}
@@ -186,7 +186,7 @@ func (m *Manager) Resume(ctx context.Context, id ID) (Run, error) {
 	return m.Provision(ctx, id)
 }
 func (m *Manager) Cleanup(ctx context.Context, id ID) error {
-	run, err := m.get(id)
+	run, err := m.get(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -240,14 +240,22 @@ func (m *Manager) mark(run Run, id string, status StepStatus, evidence string, p
 	}
 	return run
 }
-func (m *Manager) get(id ID) (Run, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	run, ok := m.runs[id]
-	if !ok {
-		return Run{}, errors.New("provisioning run not found")
+func (m *Manager) get(ctx context.Context, id ID) (Run, error) {
+	if m.Store != nil {
+		if persisted, err := m.Store.Get(ctx, id); err == nil {
+			m.mu.Lock()
+			m.runs[id] = persisted
+			m.mu.Unlock()
+			return persisted, nil
+		}
 	}
-	return run, nil
+	m.mu.Lock()
+	run, ok := m.runs[id]
+	m.mu.Unlock()
+	if ok {
+		return run, nil
+	}
+	return Run{}, errors.New("provisioning run not found")
 }
 func (m *Manager) save(ctx context.Context, run Run) error {
 	m.mu.Lock()

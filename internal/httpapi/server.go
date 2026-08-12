@@ -68,6 +68,7 @@ type Server struct {
 	DesignSystems       map[string]designintelligence.DesignSystem
 	KnowledgeStore      knowledge.Store
 	ProductExperience   *productexperience.Service
+	ProductStore        *productexperience.PostgresStore
 	Constitutions       map[string]constitution.Constitution
 	ConstitutionStore   *constitution.PostgresStore
 	ActivityLog         *productexperience.ActivityLog

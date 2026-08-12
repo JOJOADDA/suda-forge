@@ -1,6 +1,7 @@
 package productexperience
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -11,11 +12,19 @@ import (
 	"suda-forge/internal/knowledge"
 )
 
+type DesignReader interface {
+	Get(context.Context, string) (designintelligence.DesignSystem, error)
+}
+type ConstitutionReader interface {
+	Get(context.Context, string, string) (constitution.Constitution, error)
+}
 type Service struct {
-	Knowledge     knowledge.Store
-	DesignSystems map[string]designintelligence.DesignSystem
-	Constitutions map[string]constitution.Constitution
-	Now           func() time.Time
+	Knowledge         knowledge.Store
+	DesignSystems     map[string]designintelligence.DesignSystem
+	DesignStore       DesignReader
+	Constitutions     map[string]constitution.Constitution
+	ConstitutionStore ConstitutionReader
+	Now               func() time.Time
 }
 
 func NewService(now func() time.Time) *Service {
@@ -29,10 +38,17 @@ func (s *Service) Assemble(in ContextRequest) (AgentContext, error) {
 		return AgentContext{}, errors.New("project_id and task are required")
 	}
 	c, ok := s.Constitutions[in.ProjectID+":"+in.AgentID]
+	if !ok && s.ConstitutionStore != nil {
+		if loaded, err := s.ConstitutionStore.Get(context.Background(), in.ProjectID, in.AgentID); err == nil {
+			c = loaded
+			s.Constitutions[in.ProjectID+":"+in.AgentID] = c
+			ok = true
+		}
+	}
 	if !ok {
 		return AgentContext{}, errors.New("agent constitution not found")
 	}
-	g, err := s.Knowledge.Graph(in.ProjectID)
+	g, err := s.Knowledge.Graph(context.Background(), in.ProjectID)
 	if err != nil {
 		return AgentContext{}, err
 	}
@@ -40,6 +56,12 @@ func (s *Service) Assemble(in ContextRequest) (AgentContext, error) {
 	if d, ok := s.DesignSystems[in.ProjectID]; ok {
 		copy := d
 		design = &copy
+	} else if s.DesignStore != nil {
+		if d, err := s.DesignStore.Get(context.Background(), in.ProjectID); err == nil {
+			s.DesignSystems[in.ProjectID] = d
+			copy := d
+			design = &copy
+		}
 	}
 	return AgentContext{CoreConstitution: "SUDA FORGE agents act only within project policy, use available tools truthfully, and verify meaningful changes.", SecurityPolicy: c.SecurityRules, Role: in.Role, ProjectPolicy: c, Task: in.Task, Knowledge: g, DesignSystem: design, CurrentState: in.CurrentState, AvailableTools: in.AvailableTools, RuntimeCapabilities: in.RuntimeCapabilities, VerificationRequirements: in.VerificationRequirements, AssembledAt: s.Now().UTC()}, nil
 }
@@ -63,7 +85,7 @@ func (s *Service) Recover(projectID string, in ContextRequest) (SessionRecovery,
 	return SessionRecovery{ProjectID: projectID, CurrentState: in.CurrentState, Knowledge: ctx.Knowledge, Decisions: decisions, Tasks: tasks, Bugs: bugs, DesignSystem: ctx.DesignSystem, GitState: map[string]string{}, VerificationState: map[string]string{}, Summary: summary}, nil
 }
 func (s *Service) Impact(projectID string, root knowledge.NodeID) (ImpactAnalysis, error) {
-	g, err := s.Knowledge.Graph(projectID)
+	g, err := s.Knowledge.Graph(context.Background(), projectID)
 	if err != nil {
 		return ImpactAnalysis{}, err
 	}

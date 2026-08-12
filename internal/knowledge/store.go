@@ -1,6 +1,7 @@
 package knowledge
 
 import (
+	"context"
 	"errors"
 	"sort"
 	"sync"
@@ -20,7 +21,7 @@ func NewMemoryStore(now func() time.Time) *MemoryStore {
 	}
 	return &MemoryStore{nodes: map[NodeID]Node{}, edges: map[EdgeID]Edge{}, now: now}
 }
-func (s *MemoryStore) UpsertNode(n Node) (Node, error) {
+func (s *MemoryStore) UpsertNode(_ context.Context, n Node) (Node, error) {
 	if n.ProjectID == "" || n.ID == "" || n.Type == "" || n.Name == "" {
 		return Node{}, errors.New("node project, id, type, and name are required")
 	}
@@ -36,7 +37,7 @@ func (s *MemoryStore) UpsertNode(n Node) (Node, error) {
 	s.nodes[n.ID] = n
 	return n, nil
 }
-func (s *MemoryStore) UpsertEdge(e Edge) (Edge, error) {
+func (s *MemoryStore) UpsertEdge(_ context.Context, e Edge) (Edge, error) {
 	if e.ProjectID == "" || e.ID == "" || e.From == "" || e.To == "" || e.Type == "" {
 		return Edge{}, errors.New("edge project, id, from, to, and type are required")
 	}
@@ -56,7 +57,7 @@ func (s *MemoryStore) UpsertEdge(e Edge) (Edge, error) {
 	s.edges[e.ID] = e
 	return e, nil
 }
-func (s *MemoryStore) Graph(project string) (Graph, error) {
+func (s *MemoryStore) Graph(_ context.Context, project string) (Graph, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	g := Graph{ProjectID: project, Nodes: []Node{}, Edges: []Edge{}}
@@ -74,8 +75,8 @@ func (s *MemoryStore) Graph(project string) (Graph, error) {
 	sort.Slice(g.Edges, func(i, j int) bool { return g.Edges[i].ID < g.Edges[j].ID })
 	return g, nil
 }
-func (s *MemoryStore) Neighbors(project string, id NodeID, typ EdgeType) ([]Node, error) {
-	g, _ := s.Graph(project)
+func (s *MemoryStore) Neighbors(ctx context.Context, project string, id NodeID, typ EdgeType) ([]Node, error) {
+	g, _ := s.Graph(ctx, project)
 	ids := map[NodeID]bool{}
 	for _, e := range g.Edges {
 		if e.From == id && (typ == "" || e.Type == typ) {
@@ -90,3 +91,5 @@ func (s *MemoryStore) Neighbors(project string, id NodeID, typ EdgeType) ([]Node
 	}
 	return out, nil
 }
+
+var _ Store = (*MemoryStore)(nil)

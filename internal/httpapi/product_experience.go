@@ -46,7 +46,7 @@ func (s Server) getKnowledge(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "knowledge graph unavailable"})
 		return
 	}
-	g, err := s.KnowledgeStore.Graph(r.PathValue("project"))
+	g, err := s.KnowledgeStore.Graph(r.Context(), r.PathValue("project"))
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -64,7 +64,7 @@ func (s Server) upsertKnowledgeNode(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	n.ProjectID = r.PathValue("project")
-	out, err := s.KnowledgeStore.UpsertNode(n)
+	out, err := s.KnowledgeStore.UpsertNode(r.Context(), n)
 	if err != nil {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 		return
@@ -82,7 +82,7 @@ func (s Server) upsertKnowledgeEdge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	e.ProjectID = r.PathValue("project")
-	out, err := s.KnowledgeStore.UpsertEdge(e)
+	out, err := s.KnowledgeStore.UpsertEdge(r.Context(), e)
 	if err != nil {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 		return
@@ -145,6 +145,12 @@ func (s Server) planAutonomousLoop(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeJSON(w, http.StatusUnprocessableEntity, map[string]string{"error": err.Error()})
 		return
+	}
+	if s.ProductStore != nil {
+		if err := s.ProductStore.SaveLoop(r.Context(), out); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
+			return
+		}
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -244,9 +250,17 @@ func (s Server) createConstitution(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, c)
 }
 func (s Server) getConstitution(w http.ResponseWriter, r *http.Request) {
-	if c, ok := s.Constitutions[r.PathValue("project")+":"+r.PathValue("agent")]; ok {
+	key := r.PathValue("project") + ":" + r.PathValue("agent")
+	if c, ok := s.Constitutions[key]; ok {
 		writeJSON(w, http.StatusOK, c)
 		return
+	}
+	if s.ConstitutionStore != nil {
+		if c, err := s.ConstitutionStore.Get(r.Context(), r.PathValue("project"), r.PathValue("agent")); err == nil {
+			s.Constitutions[key] = c
+			writeJSON(w, http.StatusOK, c)
+			return
+		}
 	}
 	writeJSON(w, http.StatusNotFound, map[string]string{"error": "constitution not found"})
 }
