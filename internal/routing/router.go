@@ -17,6 +17,26 @@ func NewRouter(estimator CostEstimator) Router {
 	}
 	return Router{Estimator: estimator}
 }
+func (r Router) DecideWithFallbacks(req RoutingRequest) (RoutingDecision, error) {
+	decision, err := r.Decide(req)
+	if err == nil {
+		return decision, nil
+	}
+	for _, fallback := range req.Fallbacks {
+		for _, model := range req.Models {
+			if model.ProviderID == fallback.ProviderID && model.ModelID == fallback.ModelID {
+				candidateReq := req
+				candidateReq.Models = []ModelProfile{model}
+				candidateReq.UserOverride = nil
+				if fallbackDecision, fallbackErr := r.Decide(candidateReq); fallbackErr == nil {
+					fallbackDecision.Reason = "Fallback selected after primary incompatibility: " + fallbackDecision.Reason
+					return fallbackDecision, nil
+				}
+			}
+		}
+	}
+	return decision, err
+}
 func (r Router) Decide(req RoutingRequest) (RoutingDecision, error) {
 	policy := effectivePolicy(req)
 	if req.PrivacyLimit == "" {
@@ -48,7 +68,8 @@ func (r Router) Decide(req RoutingRequest) (RoutingDecision, error) {
 	})
 	selected := accepted[0]
 	alternatives := accepted[1:]
-	decision := RoutingDecision{Selected: selected.Model, ProviderID: selected.Model.ProviderID, Reason: fmt.Sprintf("Selected %s because %s.", selected.Model.ModelID, strings.Join(selected.Reasons, ", ")), Alternatives: alternatives, Rejected: rejected, ConstraintsApplied: []string{"privacy", "availability", "capability", "agent_compatibility", "runtime", "budget"}, EstimatedCost: selected.EstimatedCost, Confidence: confidence(selected.Score)}
+	decision := RoutingDecision{Selected: selected.Model, ProviderID: selected.Model.ProviderID, Reason: fmt.Sprintf("Selected %s because %s.", selected.Model.ModelID, strings.Join(selected.Reasons, ", ")), Alternatives: alternatives, Rejected: rejected, ConstraintsApplied: []string{"privacy", "availability", "capability", "agent_compatibility", "runtime", "runtime_health", "resources", "offline", "budget"},
+		EstimatedCost: selected.EstimatedCost, Confidence: confidence(selected.Score)}
 	return decision, nil
 }
 func effectivePolicy(req RoutingRequest) RoutingPolicy {
@@ -74,6 +95,21 @@ func (r Router) evaluate(req RoutingRequest, policy RoutingPolicy, model ModelPr
 	}
 	if !req.AvailableRuntime {
 		return fail("runtime is unavailable")
+	}
+	if req.Offline && model.Remote {
+		return fail("offline mode excludes remote model")
+	}
+	if model.RuntimeID != "" && !model.RuntimeHealthy {
+		return fail("runtime health is not available")
+	}
+	if model.Resources.MemoryBytes > 0 && req.AvailableMemory > 0 && model.Resources.MemoryBytes > req.AvailableMemory {
+		return fail("insufficient memory")
+	}
+	if model.Resources.VRAMBytes > 0 && req.AvailableVRAM > 0 && model.Resources.VRAMBytes > req.AvailableVRAM {
+		return fail("insufficient GPU memory")
+	}
+	if model.Resources.GPURequired && !req.GPUAvailable {
+		return fail("GPU is required")
 	}
 	if req.LocalPolicy == LocalOnly && !model.Local {
 		return fail("local-only policy")
@@ -125,6 +161,11 @@ func (r Router) evaluate(req RoutingRequest, policy RoutingPolicy, model ModelPr
 			c.Score += 0.5
 		}
 		c.Reasons = append(c.Reasons, "balanced policy")
+	case CloudFirst:
+		if model.Remote {
+			c.Score += 2
+			c.Reasons = append(c.Reasons, "cloud-first preference")
+		}
 	}
 	if req.LocalPolicy == LocalFirst && model.Local {
 		c.Score += 2

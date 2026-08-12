@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"suda-forge/internal/agent"
+	"suda-forge/internal/aifabric"
 	"suda-forge/internal/events"
 	"suda-forge/internal/model"
 	"suda-forge/internal/orchestration"
@@ -36,6 +37,8 @@ type Server struct {
 	VerificationEngine *verification.Engine
 	RepairLoop         *verification.RepairLoop
 	RuntimeProvider    runtime.Provider
+	AIManager          *aifabric.Manager
+	AIStore            *aifabric.Store
 }
 
 func (s Server) Handler() http.Handler {
@@ -62,6 +65,26 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/verifications/{id}/cancel", s.cancelVerification)
 	mux.HandleFunc("POST /api/verifications/{id}/repair", s.repairVerification)
 	mux.HandleFunc("GET /api/verifications/{id}/artifacts", s.verificationArtifacts)
+	mux.HandleFunc("GET /api/ai/runtimes", s.aiRuntimes)
+	mux.HandleFunc("GET /api/ai/runtimes/{id}", s.aiRuntime)
+	mux.HandleFunc("POST /api/ai/runtimes/{id}/start", s.aiRuntimeStart)
+	mux.HandleFunc("POST /api/ai/runtimes/{id}/stop", s.aiRuntimeStop)
+	mux.HandleFunc("POST /api/ai/runtimes/{id}/health", s.aiRuntimeHealth)
+	mux.HandleFunc("GET /api/ai/models", s.aiModels)
+	mux.HandleFunc("GET /api/ai/models/{id}", s.aiModel)
+	mux.HandleFunc("POST /api/ai/models/discover", s.aiModelsDiscover)
+	mux.HandleFunc("POST /api/ai/models/install", s.aiModelInstall)
+	mux.HandleFunc("POST /api/ai/models/load", s.aiModelLoad)
+	mux.HandleFunc("POST /api/ai/models/unload", s.aiModelUnload)
+	mux.HandleFunc("GET /api/ai/hardware", s.aiHardware)
+	mux.HandleFunc("GET /api/ai/gpus", s.aiGPUs)
+	mux.HandleFunc("GET /api/ai/health", s.aiHealth)
+	mux.HandleFunc("POST /api/ai/inference", s.aiInference)
+	mux.HandleFunc("POST /api/ai/inference/stream", s.aiInferenceStream)
+
+	mux.HandleFunc("GET /api/projects/{project}/ai-settings", s.aiProjectSettings)
+	mux.HandleFunc("PUT /api/projects/{project}/ai-settings", s.aiUpdateProjectSettings)
+
 	mux.HandleFunc("GET /api/tasks/{id}/verifications", s.taskVerifications)
 
 	mux.HandleFunc("POST /api/projects/{project}/workflows/{workflow}/tasks/{task}/approvals", s.requestApproval)
@@ -148,9 +171,29 @@ func (s Server) decideModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(request.Models) == 0 {
-		request.Models = s.RoutingModels
+		request.Models = append([]routing.ModelProfile{}, s.RoutingModels...)
+		if s.AIManager != nil {
+			request.Models = append(request.Models, aifabric.RoutingProfiles(s.AIManager.Registry.Models(), s.AIManager.CachedHealth())...)
+		}
 	}
-	decision, err := s.Router.Decide(request)
+	if s.AIStore != nil && request.ProjectID != "" {
+		if settings, settingsErr := s.AIStore.ProjectSettings(r.Context(), request.ProjectID); settingsErr == nil {
+			if request.Policy == "" {
+				request.Policy = settings.RoutingPolicy
+			}
+			if request.PrivacyLimit == "" {
+				request.PrivacyLimit = settings.PrivacyPolicy
+			}
+			if settings.LocalOnly {
+				request.LocalPolicy = routing.LocalOnly
+			}
+			if request.Budget == 0 {
+				request.Budget = settings.Budget
+			}
+			request.Models = aifabric.ApplyProjectPolicy(settings, request.Models)
+		}
+	}
+	decision, err := s.Router.DecideWithFallbacks(request)
 	if s.RoutingStore != nil {
 		_ = s.RoutingStore.SaveDecision(r.Context(), routing.DecisionID(time.Now().UTC()), request, decision)
 	}

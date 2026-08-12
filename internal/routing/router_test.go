@@ -63,3 +63,15 @@ func TestRouterPolicyAndOverride(t *testing.T) {
 		t.Fatalf("override selected %s", d.Selected.ModelID)
 	}
 }
+
+func TestPhase6OfflineAndResourceConstraints(t *testing.T) {
+	models := []ModelProfile{
+		{ModelID: "remote", ProviderID: "cloud", Remote: true, Availability: Available, ContextWindow: 1000, Capabilities: map[Capability]bool{Coding: true}},
+		{ModelID: "gpu", ProviderID: "local", RuntimeID: "ollama", Local: true, Availability: Available, RuntimeHealthy: true, Resources: ModelResourceRequirement{GPURequired: true, VRAMBytes: 100}, Capabilities: map[Capability]bool{Coding: true}},
+	}
+	router := NewRouter(nil)
+	decision, err := router.Decide(RoutingRequest{Task: TaskProfile{TaskType: TaskCode}, AvailableRuntime: true, Offline: true, GPUAvailable: false, AvailableVRAM: 50, Models: models, Policy: CloudFirst})
+	if err == nil || len(decision.Rejected) != 2 {
+		t.Fatalf("decision=%+v err=%v", decision, err)
+	}
+}

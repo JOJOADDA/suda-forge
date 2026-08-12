@@ -1,0 +1,9 @@
+vite v8.2.1 building client environment for production...
+[2Ktransforming...[32m✓[0m 17 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[0m[32mindex.html                 [0m[1;2m  0.45 kB[0m[2m │ gzip:  0.29 kB[0m
+[2mdist/[0m[2massets/[0m[35mindex-DfPlDkU3.css  [0m[1;2m  8.27 kB[0m[2m │ gzip:  2.55 kB[0m
+[2mdist/[0m[2massets/[0m[36mindex-C6GsB0Fx.js   [0m[1;2m207.01 kB[0m[2m │ gzip: 64.43 kB[0m
+
+✓ built in 189ms

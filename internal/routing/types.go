@@ -59,6 +59,7 @@ const (
 	Fastest      RoutingPolicy = "FASTEST"
 	PrivacyFirst RoutingPolicy = "PRIVACY_FIRST"
 	Balanced     RoutingPolicy = "BALANCED"
+	CloudFirst   RoutingPolicy = "CLOUD_FIRST"
 	Custom       RoutingPolicy = "CUSTOM"
 )
 
@@ -104,18 +105,27 @@ type Pricing struct {
 	PricingUnit   string    `json:"pricing_unit"`
 	EffectiveDate time.Time `json:"effective_date"`
 }
+type ModelResourceRequirement struct {
+	MemoryBytes uint64 `json:"memory_bytes,omitempty"`
+	VRAMBytes   uint64 `json:"vram_bytes,omitempty"`
+	GPURequired bool   `json:"gpu_required,omitempty"`
+}
 type ModelProfile struct {
-	ModelID         string              `json:"model_id"`
-	ProviderID      string              `json:"provider_id"`
-	DisplayName     string              `json:"display_name"`
-	Capabilities    map[Capability]bool `json:"capabilities"`
-	Performance     PerformanceProfile  `json:"performance"`
-	Pricing         Pricing             `json:"pricing"`
-	Availability    Availability        `json:"availability"`
-	Local           bool                `json:"local"`
-	Remote          bool                `json:"remote"`
-	ContextWindow   int                 `json:"context_window"`
-	SupportedAgents []string            `json:"supported_agents,omitempty"`
+	ModelID         string                   `json:"model_id"`
+	ProviderID      string                   `json:"provider_id"`
+	RuntimeID       string                   `json:"runtime_id,omitempty"`
+	DisplayName     string                   `json:"display_name"`
+	Capabilities    map[Capability]bool      `json:"capabilities"`
+	Performance     PerformanceProfile       `json:"performance"`
+	Pricing         Pricing                  `json:"pricing"`
+	Availability    Availability             `json:"availability"`
+	Local           bool                     `json:"local"`
+	Remote          bool                     `json:"remote"`
+	ContextWindow   int                      `json:"context_window"`
+	PrivacyLevel    string                   `json:"privacy_level,omitempty"`
+	Resources       ModelResourceRequirement `json:"resources,omitempty"`
+	RuntimeHealthy  bool                     `json:"runtime_healthy"`
+	SupportedAgents []string                 `json:"supported_agents,omitempty"`
 }
 type ProviderHealth struct {
 	ProviderID         string       `json:"provider_id"`
@@ -130,19 +140,25 @@ type HealthCache interface {
 	Put(ProviderHealth)
 }
 type RoutingRequest struct {
-	ProjectID          string          `json:"project_id"`
-	AgentID            string          `json:"agent_id"`
-	Task               TaskProfile     `json:"task_profile"`
-	Policy             RoutingPolicy   `json:"routing_policy"`
-	PrivacyLimit       PrivacyClass    `json:"privacy_policy"`
-	LocalPolicy        LocalPolicy     `json:"local_policy"`
-	Budget             float64         `json:"budget"`
-	AvailableRuntime   bool            `json:"available_runtime"`
-	Models             []ModelProfile  `json:"available_models"`
-	UserOverride       *ModelReference `json:"user_override,omitempty"`
-	ProjectPolicy      *RoutingPolicy  `json:"project_policy,omitempty"`
-	OrganizationPolicy *RoutingPolicy  `json:"organization_policy,omitempty"`
-	GlobalPolicy       *RoutingPolicy  `json:"global_policy,omitempty"`
+	ProjectID          string           `json:"project_id"`
+	AgentID            string           `json:"agent_id"`
+	Task               TaskProfile      `json:"task_profile"`
+	Policy             RoutingPolicy    `json:"routing_policy"`
+	PrivacyLimit       PrivacyClass     `json:"privacy_policy"`
+	LocalPolicy        LocalPolicy      `json:"local_policy"`
+	Budget             float64          `json:"budget"`
+	AvailableRuntime   bool             `json:"available_runtime"`
+	RuntimeHealthy     bool             `json:"runtime_healthy"`
+	Offline            bool             `json:"offline"`
+	AvailableMemory    uint64           `json:"available_memory,omitempty"`
+	AvailableVRAM      uint64           `json:"available_vram,omitempty"`
+	GPUAvailable       bool             `json:"gpu_available,omitempty"`
+	Models             []ModelProfile   `json:"available_models"`
+	Fallbacks          []ModelReference `json:"fallbacks,omitempty"`
+	UserOverride       *ModelReference  `json:"user_override,omitempty"`
+	ProjectPolicy      *RoutingPolicy   `json:"project_policy,omitempty"`
+	OrganizationPolicy *RoutingPolicy   `json:"organization_policy,omitempty"`
+	GlobalPolicy       *RoutingPolicy   `json:"global_policy,omitempty"`
 }
 type ModelReference struct {
 	ProviderID string `json:"provider_id"`

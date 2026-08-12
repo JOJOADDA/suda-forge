@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"suda-forge/adapters/runtimes/lxc"
 	"suda-forge/internal/agent"
+	"suda-forge/internal/aifabric"
 	"suda-forge/internal/config"
 	"suda-forge/internal/events"
 	"suda-forge/internal/httpapi"
@@ -73,10 +74,22 @@ func main() {
 	orchestrator := orchestration.Orchestrator{Planner: planner, Now: time.Now}
 	workflowStore := orchestration.PostgresStore{DB: db}
 	eventBus := events.NewBus()
+	aiRegistry := aifabric.NewRuntimeRegistry()
+	if cfg.OllamaURL != "" {
+		_ = aiRegistry.RegisterRuntime(aifabric.NewOllamaRuntime(aifabric.RuntimeSpec{ID: "ollama", Kind: "ollama", Endpoint: cfg.OllamaURL, Local: true}))
+	}
+	if cfg.VLLMURL != "" {
+		_ = aiRegistry.RegisterRuntime(aifabric.NewVLLMRuntime(aifabric.RuntimeSpec{ID: "vllm", Kind: "vllm", Endpoint: cfg.VLLMURL, Local: true}))
+	}
+	if cfg.LlamaCPPURL != "" {
+		_ = aiRegistry.RegisterRuntime(aifabric.NewLlamaCPPRuntime(aifabric.RuntimeSpec{ID: "llama.cpp", Kind: "llama.cpp", Endpoint: cfg.LlamaCPPURL, Local: true}))
+	}
+	aiManager := aifabric.NewManager(aiRegistry, aifabric.BusSink{Bus: eventBus})
+	aiStore := aifabric.Store{DB: db}
 	verificationStore := verification.Store{DB: db}
 	verificationEngine := &verification.Engine{Registry: verification.DefaultRegistry(), Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
 	repairLoop := &verification.RepairLoop{Engine: verificationEngine, Analyzer: verification.DeterministicFailureAnalyzer{}, Executor: verification.OrchestrationRepairExecutor{Executor: orchestration.RuntimeAgentExecutor{}}, MaxAttempts: 3, Events: verification.BusSink{Bus: eventBus}, Now: time.Now}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
