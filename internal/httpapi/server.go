@@ -5,8 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 
+	"suda-forge/internal/agent"
 	"suda-forge/internal/events"
+	"suda-forge/internal/model"
 
 	"suda-forge/domain/project"
 	"suda-forge/internal/lifecycle"
@@ -15,9 +18,12 @@ import (
 )
 
 type Server struct {
-	Projects  postgres.Projects
-	Lifecycle lifecycle.Service
-	Events    *events.Bus
+	Projects      postgres.Projects
+	Lifecycle     lifecycle.Service
+	Events        *events.Bus
+	AgentService  *agent.Service
+	AgentRegistry *agent.Registry
+	ModelRegistry *model.Registry
 }
 
 func (s Server) Handler() http.Handler {
@@ -29,6 +35,16 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /ready", s.ready)
 
 	mux.HandleFunc("GET /api/v1/events", s.events)
+	mux.HandleFunc("GET /api/agents", s.listAgents)
+	mux.HandleFunc("GET /api/providers", s.listProviders)
+	mux.HandleFunc("GET /api/models", s.listModels)
+	mux.HandleFunc("GET /api/projects/{project}/agents", s.listAgents)
+	mux.HandleFunc("POST /api/projects/{project}/agent-sessions", s.createAgentSession)
+	mux.HandleFunc("GET /api/projects/{project}/agent-sessions", s.listAgentSessions)
+	mux.HandleFunc("POST /api/projects/{project}/agent-sessions/{session}/start", s.startAgentSession)
+	mux.HandleFunc("POST /api/projects/{project}/agent-sessions/{session}/messages", s.sendAgentMessage)
+	mux.HandleFunc("POST /api/projects/{project}/agent-sessions/{session}/cancel", s.cancelAgentSession)
+	mux.HandleFunc("GET /api/projects/{project}/agent-sessions/{session}/events", s.listAgentEvents)
 	mux.HandleFunc("GET /api/v1/projects", s.listProjects)
 	mux.HandleFunc("POST /api/v1/projects", s.createProject)
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.getProject)
@@ -67,6 +83,120 @@ func (s Server) events(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, "event: %s\\ndata: %s\\n\\n", event.Type, data)
 		flusher.Flush()
 	}
+}
+
+func (s Server) listProviders(w http.ResponseWriter, r *http.Request) {
+	if s.ModelRegistry == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("model registry unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.ModelRegistry.Providers())
+}
+func (s Server) listModels(w http.ResponseWriter, r *http.Request) {
+	if s.ModelRegistry == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("model registry unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.ModelRegistry.Models())
+}
+
+func (s Server) listAgents(w http.ResponseWriter, r *http.Request) {
+	if s.AgentRegistry == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("agent registry unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.AgentRegistry.Definitions())
+}
+func (s Server) createAgentSession(w http.ResponseWriter, r *http.Request) {
+	if s.AgentService == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("agent service unavailable"))
+		return
+	}
+	var input struct {
+		AgentID          agent.ID `json:"agent_id"`
+		RuntimeID        string   `json:"runtime_id"`
+		WorkingDirectory string   `json:"working_directory"`
+		ProviderID       string   `json:"provider_id"`
+		ModelID          string   `json:"model_id"`
+		ConfigurationID  string   `json:"configuration_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	now := time.Now().UTC()
+	session := agent.NewSession(r.PathValue("project"), input.AgentID, agent.ModelReference{ProviderID: input.ProviderID, ModelID: input.ModelID, ConfigurationID: input.ConfigurationID}, input.RuntimeID, input.WorkingDirectory, now)
+	if err := s.AgentService.CreateSession(r.Context(), session); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, session)
+}
+func (s Server) listAgentSessions(w http.ResponseWriter, r *http.Request) {
+	if s.AgentService == nil || s.AgentService.Store == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("agent service unavailable"))
+		return
+	}
+	sessions, err := s.AgentService.Store.ListSessions(r.Context(), r.PathValue("project"))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, sessions)
+}
+func (s Server) startAgentSession(w http.ResponseWriter, r *http.Request) {
+	if s.AgentService == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("agent service unavailable"))
+		return
+	}
+	session, err := s.AgentService.Start(r.Context(), r.PathValue("project"), agent.SessionID(r.PathValue("session")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, session)
+}
+func (s Server) sendAgentMessage(w http.ResponseWriter, r *http.Request) {
+	if s.AgentService == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("agent service unavailable"))
+		return
+	}
+	var input struct {
+		Message string `json:"message"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil || input.Message == "" {
+		writeError(w, http.StatusBadRequest, errors.New("message is required"))
+		return
+	}
+	if err := s.AgentService.SendMessage(r.Context(), r.PathValue("project"), agent.SessionID(r.PathValue("session")), input.Message); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "accepted"})
+}
+func (s Server) cancelAgentSession(w http.ResponseWriter, r *http.Request) {
+	if s.AgentService == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("agent service unavailable"))
+		return
+	}
+	session, err := s.AgentService.Cancel(r.Context(), r.PathValue("project"), agent.SessionID(r.PathValue("session")))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, session)
+}
+func (s Server) listAgentEvents(w http.ResponseWriter, r *http.Request) {
+	if s.AgentService == nil || s.AgentService.Store == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("agent service unavailable"))
+		return
+	}
+	events, err := s.AgentService.Store.ListEvents(r.Context(), r.PathValue("project"), agent.SessionID(r.PathValue("session")))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, events)
 }
 
 func (s Server) listProjects(w http.ResponseWriter, r *http.Request) {

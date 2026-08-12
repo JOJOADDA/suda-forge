@@ -11,10 +11,12 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"suda-forge/adapters/runtimes/lxc"
+	"suda-forge/internal/agent"
 	"suda-forge/internal/config"
 	"suda-forge/internal/events"
 	"suda-forge/internal/httpapi"
 	"suda-forge/internal/lifecycle"
+	"suda-forge/internal/model"
 	"suda-forge/internal/postgres"
 )
 
@@ -43,7 +45,18 @@ func main() {
 	}
 	projects := postgres.Projects{DB: db}
 	lifecycleService := lifecycle.Service{Projects: projects, Runtime: runtimeProvider, Now: time.Now}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus()}
+	agentRegistry := agent.NewRegistry()
+	_ = agentRegistry.RegisterDefinition(agent.AgentDefinition{ID: "codex", Name: "codex", DisplayName: "Codex", Adapter: "codex", Status: "AVAILABLE"})
+	_ = agentRegistry.RegisterDefinition(agent.AgentDefinition{ID: "claude-code", Name: "claude-code", DisplayName: "Claude Code", Adapter: "claude-code", Status: "AVAILABLE"})
+	_ = agentRegistry.RegisterDefinition(agent.AgentDefinition{ID: "kimi", Name: "kimi", DisplayName: "Kimi", Adapter: "kimi", Status: "AVAILABLE"})
+	_ = agentRegistry.Register(agent.NewCodexAdapter(nil))
+	_ = agentRegistry.Register(agent.NewClaudeCodeAdapter(nil))
+	_ = agentRegistry.Register(agent.NewKimiAdapter(nil))
+	agentStore := agent.PostgresStore{DB: db}
+	agentService := agent.Service{Store: agentStore, Adapters: agentRegistry, Now: time.Now}
+	modelRegistry := model.NewRegistry()
+	_ = modelRegistry.RegisterProvider(agent.Provider{ID: "custom", Name: "Custom", Type: "custom", Status: "AVAILABLE"})
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus(), AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
