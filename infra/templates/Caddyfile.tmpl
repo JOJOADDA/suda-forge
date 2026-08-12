@@ -1,0 +1,19 @@
+{{HOSTNAME}} {
+    encode zstd gzip
+
+    # The Go server owns JSON APIs, health endpoints, and the product activity SSE stream.
+    @backend path /api/* /healthz /health /ready /events
+    reverse_proxy @backend 127.0.0.1:8080
+
+    # Production frontend output. SPA fallback keeps client-side views routable.
+    root * {{INSTALL_DIR}}/apps/web/dist
+    try_files {path} /index.html
+    file_server
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+        -Server
+    }
+}

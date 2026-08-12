@@ -1,0 +1,25 @@
+[Unit]
+Description=SUDA FORGE control plane
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+# LXC management currently requires privileged host access. Replace with a
+# dedicated delegated LXC service account after the runtime permission model is
+# implemented and tested.
+User=root
+Group=root
+WorkingDirectory={{INSTALL_DIR}}
+EnvironmentFile=/etc/suda-forge/suda-forge.env
+ExecStart={{INSTALL_DIR}}/bin/suda-forge
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=/var/lib/suda-forge /etc/suda-forge
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

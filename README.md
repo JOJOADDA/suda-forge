@@ -44,6 +44,20 @@ pnpm dev
 
 The backend exposes `GET /healthz`, `GET /health`, and `GET /ready`. `/health` reports application health separately from Project Computer runtime-host health. `/ready` returns HTTP 503 when the host cannot support the required LXC Project Computer. This is an explicit environment state, not a fake ready state.
 
+## Production server bootstrap
+
+The first production delivery layer is under [`infra/`](./infra/). It targets an Ubuntu or Debian server and prepares the host dependencies, PostgreSQL migration runner, production frontend build, Go binary, systemd service, and Caddy static-plus-API routing.
+
+Run it from a checked-out repository:
+
+```bash
+sudo SUDA_INSTALL_DIR=/opt/suda-forge bash infra/install.sh suda.example.com
+```
+
+The installer creates `/etc/suda-forge/suda-forge.env` on first run. Review the database URL and runtime settings before exposing the service. It uses same-origin API requests in production, serves the compiled frontend from Caddy, and proxies `/api/*`, `/healthz`, `/health`, `/ready`, and `/events` to the loopback Go server.
+
+The current phase is intentionally conservative. Project preview routing, public authentication, delegated non-root LXC execution, automatic database provisioning, backups, and deployment rollback remain follow-up production phases. The service template currently runs as root because the LXC permission model has not yet been converted to a delegated service account. Do not expose the installation to untrusted users until the authentication and privilege-separation phases are complete.
+
 ## Optional local AI runtimes
 
 Configure an existing runtime explicitly before starting the server:

@@ -29,7 +29,7 @@ type ImpactAnalysis = { root_node: string; risk: string; files: string[]; apis: 
 type VisualQA = { status: string; reason?: string; results?: { viewport: string; status: string; evidence?: string }[] }
 type GovernanceDecision = { effect: string; reason: string; action?: { permission: string; risk: string; resource?: string } }
 type LoopExecution = { id: string; project_id: string; goal?: string; status: string; current_stage?: string; error?: string; results?: Record<string, { state: string; message: string }> }
-const API = import.meta.env.VITE_API_URL ?? 'http://localhost:8080'
+const API = import.meta.env.VITE_API_URL ?? (import.meta.env.DEV ? 'http://localhost:8080' : '')
 
 export default function App() {
   const [projects, setProjects] = useState<Project[]>([])
