@@ -58,8 +58,14 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-[ -n "$DEPLOY_HOST" ] || { usage >&2; fail "--host is required"; }
+if [ -z "$DEPLOY_HOST" ] && [ "$DRY_RUN" != "1" ]; then
+  usage >&2
+  fail "--host is required unless --dry-run is used"
+fi
+[ -n "$DEPLOY_HOST" ] || DEPLOY_HOST="dry-run.local"
 [ -n "$HOSTNAME_VALUE" ] || HOSTNAME_VALUE="$DEPLOY_HOST"
+case "$DEPLOY_PORT" in ''|*[!0-9]*) fail "SSH port must be numeric" ;; esac
+case "$KEEP_RELEASES" in ''|*[!0-9]*) fail "--keep-releases must be a non-negative integer" ;; esac
 
 command -v git >/dev/null 2>&1 || fail "git is required"
 command -v tar >/dev/null 2>&1 || fail "tar is required"
@@ -119,7 +125,8 @@ REMOTE_TMP="/tmp/suda-forge-$RELEASE_ID"
 log "checking SSH connectivity"
 ssh -p "$DEPLOY_PORT" -o BatchMode=yes -o ConnectTimeout=10 "$DEPLOY_USER@$DEPLOY_HOST" true
 log "uploading release artifact"
-scp -P "$DEPLOY_PORT" "$ARTIFACT" "$CHECKSUM" "$DEPLOY_USER@$DEPLOY_HOST:$REMOTE_TMP.tar.gz"
+scp -P "$DEPLOY_PORT" "$ARTIFACT" "$DEPLOY_USER@$DEPLOY_HOST:$REMOTE_TMP.tar.gz"
+scp -P "$DEPLOY_PORT" "$CHECKSUM" "$DEPLOY_USER@$DEPLOY_HOST:$REMOTE_TMP.tar.gz.sha256"
 
 log "activating release on $DEPLOY_HOST"
 ssh -p "$DEPLOY_PORT" "$DEPLOY_USER@$DEPLOY_HOST" sudo -n bash -s -- \

@@ -66,3 +66,23 @@ SUDA_SKIP_TESTS=1 infra/deploy.sh --host server.example.com
 ## Server prerequisites
 
 يجب أن يتوفر على الخادم Ubuntu أو Debian، systemd، SSH، sudo، PostgreSQL، Go، Node.js، pnpm، curl، tar، sha256sum، وCaddy عند الحاجة إلى HTTPS. كما يجب أن يكون runtime الخاص بـ LXC مجهزًا مسبقًا إذا كانت Project Computers مطلوبة. التشغيل الحالي للخدمة يستخدم root بسبب حدود LXC، ولا ينبغي فتح الخدمة للعامة قبل إكمال فصل صلاحيات runtime والمصادقة والصلاحيات.
+
+
+## Health gate and rollback
+
+كل release جديد يمر عبر health gate بعد إعادة تشغيل systemd وتحديث Caddy. إذا فشل تشغيل الخدمة أو فشل فحص `/healthz` أو أصبح إعداد Caddy غير صالح، يعيد التفعيل `current` إلى الإصدار السابق، يعيد تثبيت unit السابق، ويستعيد Caddyfile السابق عند توفره.
+
+يمكن اختبار مسار التفعيل محليًا دون خادم حقيقي:
+
+```bash
+infra/tests/deployment-logic-test.sh
+infra/tests/production-delivery-test.sh
+```
+
+يختبر المسار الأول تفعيل release ناجحًا ثم يحاكي فشل health gate ويتأكد من عودة symlink إلى الإصدار السابق. أما `--dry-run` في `infra/deploy.sh` فيبني artifact ويحسب checksum دون رفع أو تنفيذ أي تغيير خارجي:
+
+```bash
+infra/deploy.sh --dry-run
+```
+
+يتطلب النشر الحقيقي أن يكون working tree نظيفًا، وأن تكون جلسة SSH غير تفاعلية، وأن يملك المستخدم البعيد `sudo -n`. لا يتم rollback تلقائي لعمليات PostgreSQL؛ فهي forward-only ويجب أخذ backup قبل نشر migrations حساسة.

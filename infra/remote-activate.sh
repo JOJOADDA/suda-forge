@@ -10,10 +10,13 @@ HOSTNAME_VALUE="${6:?hostname required}"
 HEALTH_URL="${7:?health url required}"
 SKIP_MIGRATIONS="${8:-0}"
 KEEP_RELEASES="${9:-3}"
-ENV_DIR="/etc/suda-forge"
+ENV_DIR="${SUDA_ENV_DIR:-/etc/suda-forge}"
 ENV_FILE="$ENV_DIR/suda-forge.env"
-SERVICE_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
-CADDY_FILE="/etc/caddy/Caddyfile"
+SERVICE_FILE="${SUDA_SERVICE_FILE:-/etc/systemd/system/${SERVICE_NAME}.service}"
+CADDY_FILE="${SUDA_CADDY_FILE:-/etc/caddy/Caddyfile}"
+SYSTEMCTL_CMD="${SUDA_SYSTEMCTL_CMD:-systemctl}"
+CADDY_CMD="${SUDA_CADDY_CMD:-caddy}"
+HEALTH_CHECK_SCRIPT="${SUDA_HEALTH_CHECK_SCRIPT:-}"
 RELEASE_DIR="$RELEASE_ROOT/$RELEASE_ID"
 PREVIOUS_TARGET=""
 CADDY_BACKUP=""
@@ -24,7 +27,8 @@ fail() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
 [ "$(id -u)" -eq 0 ] || fail "remote activation must run as root"
 [ -f "$ARTIFACT_PATH" ] || fail "artifact not found: $ARTIFACT_PATH"
 [ -f "$ENV_FILE" ] || fail "missing $ENV_FILE; run infra/install.sh once or create it from the example"
-mkdir -p "$RELEASE_ROOT" "$ENV_DIR" /var/lib/suda-forge/deployments /var/lib/suda-forge/runtime
+STATE_DIR="${SUDA_STATE_DIR:-/var/lib/suda-forge}"
+mkdir -p "$RELEASE_ROOT" "$ENV_DIR" "$STATE_DIR/deployments" "$STATE_DIR/runtime"
 
 if [ -L "$CURRENT_DIR" ] || [ -d "$CURRENT_DIR" ]; then
   PREVIOUS_TARGET="$(readlink -f "$CURRENT_DIR" 2>/dev/null || true)"
@@ -38,15 +42,15 @@ fi
 rollback() {
   set +e
   printf '\nERROR: deployment failed; attempting rollback\n' >&2
-  systemctl stop "$SERVICE_NAME" >/dev/null 2>&1 || true
+  "$SYSTEMCTL_CMD" stop "$SERVICE_NAME" >/dev/null 2>&1 || true
   if [ -n "$PREVIOUS_TARGET" ] && [ -d "$PREVIOUS_TARGET" ]; then
     ln -sfn "$PREVIOUS_TARGET" "$CURRENT_DIR"
     sed "s#{{INSTALL_DIR}}#$CURRENT_DIR#g" "$PREVIOUS_TARGET/infra/templates/suda-forge.service.tmpl" > "$SERVICE_FILE"
-    systemctl daemon-reload
-    systemctl restart "$SERVICE_NAME" >/dev/null 2>&1 || true
+    "$SYSTEMCTL_CMD" daemon-reload
+    "$SYSTEMCTL_CMD" restart "$SERVICE_NAME" >/dev/null 2>&1 || true
     if [ -n "$CADDY_BACKUP" ] && [ -f "$CADDY_BACKUP" ]; then
       cp "$CADDY_BACKUP" "$CADDY_FILE"
-      caddy validate --config "$CADDY_FILE" >/dev/null 2>&1 && systemctl reload caddy >/dev/null 2>&1 || true
+      "$CADDY_CMD" validate --config "$CADDY_FILE" >/dev/null 2>&1 && "$SYSTEMCTL_CMD" reload caddy >/dev/null 2>&1 || true
     fi
     printf 'rollback target: %s\n' "$PREVIOUS_TARGET" >&2
   else
@@ -57,9 +61,8 @@ rollback() {
 trap rollback ERR
 
 log "verifying artifact checksum"
-if [ -f "${ARTIFACT_PATH}.sha256" ]; then
-  (cd "$(dirname "$ARTIFACT_PATH")" && sha256sum -c "$(basename "$ARTIFACT_PATH").sha256")
-fi
+[ -f "${ARTIFACT_PATH}.sha256" ] || fail "artifact checksum is required"
+(cd "$(dirname "$ARTIFACT_PATH")" && sha256sum -c "$(basename "$ARTIFACT_PATH").sha256")
 
 log "extracting release $RELEASE_ID"
 rm -rf "$RELEASE_DIR"
@@ -82,9 +85,9 @@ ln -sfn "$RELEASE_DIR" "$CURRENT_DIR"
 log "installing systemd unit"
 sed "s#{{INSTALL_DIR}}#$CURRENT_DIR#g" "$RELEASE_DIR/infra/templates/suda-forge.service.tmpl" > "$SERVICE_FILE"
 chmod 0644 "$SERVICE_FILE"
-systemctl daemon-reload
-systemctl enable "$SERVICE_NAME" >/dev/null
-systemctl restart "$SERVICE_NAME"
+"$SYSTEMCTL_CMD" daemon-reload
+"$SYSTEMCTL_CMD" enable "$SERVICE_NAME" >/dev/null
+"$SYSTEMCTL_CMD" restart "$SERVICE_NAME"
 
 if command -v caddy >/dev/null 2>&1 && [ -f "$RELEASE_DIR/infra/templates/Caddyfile.tmpl" ]; then
   log "validating Caddy configuration"
@@ -92,13 +95,17 @@ if command -v caddy >/dev/null 2>&1 && [ -f "$RELEASE_DIR/infra/templates/Caddyf
   CADDY_BACKUP="/etc/caddy/Caddyfile.suda-forge.previous.$RELEASE_ID"
   [ -f "$CADDY_FILE" ] && cp "$CADDY_FILE" "$CADDY_BACKUP" || true
   sed -e "s#{{HOSTNAME}}#$HOSTNAME_VALUE#g" -e "s#{{INSTALL_DIR}}#$CURRENT_DIR#g" "$RELEASE_DIR/infra/templates/Caddyfile.tmpl" > "$CADDY_FILE"
-  caddy validate --config "$CADDY_FILE"
-  systemctl enable caddy >/dev/null 2>&1 || true
-  systemctl reload caddy || systemctl restart caddy
+  "$CADDY_CMD" validate --config "$CADDY_FILE"
+  "$SYSTEMCTL_CMD" enable caddy >/dev/null 2>&1 || true
+  "$SYSTEMCTL_CMD" reload caddy || "$SYSTEMCTL_CMD" restart caddy
 fi
 
 log "health gate"
-SUDA_SERVICE_NAME="$SERVICE_NAME" bash "$CURRENT_DIR/infra/lib/health-check.sh" "$HEALTH_URL"
+if [ -n "$HEALTH_CHECK_SCRIPT" ]; then
+  bash "$HEALTH_CHECK_SCRIPT" "$HEALTH_URL"
+else
+  SUDA_SERVICE_NAME="$SERVICE_NAME" bash "$CURRENT_DIR/infra/lib/health-check.sh" "$HEALTH_URL"
+fi
 
 log "retaining last $KEEP_RELEASES releases"
 find "$RELEASE_ROOT" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -r | tail -n +$((KEEP_RELEASES + 1)) | while read -r old; do
