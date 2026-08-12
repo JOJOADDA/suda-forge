@@ -86,3 +86,32 @@ infra/deploy.sh --dry-run
 ```
 
 يتطلب النشر الحقيقي أن يكون working tree نظيفًا، وأن تكون جلسة SSH غير تفاعلية، وأن يملك المستخدم البعيد `sudo -n`. لا يتم rollback تلقائي لعمليات PostgreSQL؛ فهي forward-only ويجب أخذ backup قبل نشر migrations حساسة.
+
+
+## Network and DNS check before GitHub push
+
+يمكن فحص المسار الافتراضي وDNS وHTTPS وGitHub قبل الرفع باستخدام:
+
+```bash
+infra/check-network-and-push.sh --attempts 3 --wait 3
+```
+
+للمحاولة الآلية لإصلاح DNS، يستخدم السكربت `resolvectl` أولًا ويطبق DNS runtime على واجهة الشبكة الافتراضية:
+
+```bash
+sudo infra/check-network-and-push.sh --fix-dns
+```
+
+إذا لم يتوفر `resolvectl`، يرفض السكربت تعديل `/etc/resolv.conf` افتراضيًا. يمكن السماح بتعديل مؤقت مع أخذ نسخة احتياطية واستعادتها عند انتهاء السكربت:
+
+```bash
+sudo infra/check-network-and-push.sh --fix-dns --persist-resolv-conf
+```
+
+ولتنفيذ الرفع فقط بعد نجاح جميع فحوصات الاتصال:
+
+```bash
+infra/check-network-and-push.sh --fix-dns --push
+```
+
+السكربت لا يتجاوز أخطاء DNS أو HTTPS ولا ينفذ `git push` عند فشل الفحوصات. كما أن DNS قد يكون محجوبًا من بيئة التشغيل نفسها؛ في هذه الحالة لا يستطيع أي سكربت محلي إصلاح الحجب الخارجي، ويجب تغيير الشبكة أو إعدادات الـ runner أو تنفيذ الأمر من خادم يملك اتصالًا خارجيًا.

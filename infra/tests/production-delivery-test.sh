@@ -4,11 +4,12 @@ set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
-bash -n infra/install.sh infra/deploy.sh infra/remote-activate.sh infra/tests/deployment-logic-test.sh infra/host-deps.sh infra/preflight.sh infra/lib/health-check.sh scripts/migrate.sh
+bash -n infra/install.sh infra/deploy.sh infra/remote-activate.sh infra/check-network-and-push.sh infra/tests/deployment-logic-test.sh infra/host-deps.sh infra/preflight.sh infra/lib/health-check.sh scripts/migrate.sh
 for file in \
   infra/install.sh \
   infra/deploy.sh \
   infra/remote-activate.sh \
+  infra/check-network-and-push.sh \
   infra/tests/deployment-logic-test.sh \
   infra/host-deps.sh \
   infra/preflight.sh \
