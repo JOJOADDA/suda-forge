@@ -1,6 +1,9 @@
 package config
 
-import "os"
+import (
+	"os"
+	"strconv"
+)
 
 type Config struct {
 	HTTPAddr          string
@@ -11,6 +14,7 @@ type Config struct {
 	LlamaCPPURL       string
 	CaddyAdminURL     string
 	DeployStorageRoot string
+	AuthCookieSecure  bool
 }
 
 func Load() Config {
@@ -23,6 +27,7 @@ func Load() Config {
 		LlamaCPPURL:       env("LLAMACPP_URL", ""),
 		CaddyAdminURL:     env("CADDY_ADMIN_URL", ""),
 		DeployStorageRoot: env("SUDA_DEPLOY_STORAGE_ROOT", "/var/lib/suda-forge/deployments"),
+		AuthCookieSecure:  envBool("SUDA_COOKIE_SECURE", true),
 	}
 }
 
@@ -31,4 +36,16 @@ func env(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func envBool(key string, fallback bool) bool {
+	value := os.Getenv(key)
+	if value == "" {
+		return fallback
+	}
+	parsed, err := strconv.ParseBool(value)
+	if err != nil {
+		return fallback
+	}
+	return parsed
 }

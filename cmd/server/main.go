@@ -14,6 +14,7 @@ import (
 	"suda-forge/adapters/runtimes/lxc"
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
+	"suda-forge/internal/auth"
 	"suda-forge/internal/config"
 	"suda-forge/internal/constitution"
 	"suda-forge/internal/deployment"
@@ -59,6 +60,9 @@ func main() {
 		runtimeProvider.CreateBinary = cfg.LXCBinary
 	}
 	projects := postgres.Projects{DB: db}
+	userRepository := auth.PostgresUserRepository{DB: db}
+	sessionRepository := auth.PostgresSessionRepository{DB: db}
+	authService := &auth.AuthService{Users: userRepository, Sessions: auth.SessionService{Repository: sessionRepository, Now: time.Now}, Now: time.Now}
 	lifecycleService := lifecycle.Service{Projects: projects, Runtime: runtimeProvider, Now: time.Now}
 	agentRegistry := agent.NewRegistry()
 	_ = agentRegistry.RegisterDefinition(agent.AgentDefinition{ID: "codex", Name: "codex", DisplayName: "Codex", Adapter: "codex", Status: "AVAILABLE"})
@@ -201,7 +205,7 @@ func main() {
 	activityLog := productexperience.NewActivityLog(time.Now)
 	activityLog.Store = productStore
 	go forwardProductActivity(context.Background(), eventBus, activityLog)
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: designSystems, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, ProductStore: &productStore, LoopCoordinator: loopCoordinator, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
+	api := httpapi.Server{Auth: authService, AuthCookieSecure: cfg.AuthCookieSecure, Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: designSystems, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, ProductStore: &productStore, LoopCoordinator: loopCoordinator, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

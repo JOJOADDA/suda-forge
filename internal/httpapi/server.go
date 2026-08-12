@@ -9,6 +9,7 @@ import (
 
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
+	"suda-forge/internal/auth"
 	"suda-forge/internal/constitution"
 	"suda-forge/internal/deployment"
 	"suda-forge/internal/designintelligence"
@@ -32,6 +33,8 @@ import (
 )
 
 type Server struct {
+	Auth                *auth.AuthService
+	AuthCookieSecure    bool
 	Projects            postgres.Projects
 	Lifecycle           lifecycle.Service
 	Events              *events.Bus
@@ -78,6 +81,12 @@ type Server struct {
 
 func (s Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+	mux.HandleFunc("GET /auth/status", s.authStatus)
+	mux.HandleFunc("POST /auth/bootstrap", s.authBootstrap)
+	mux.HandleFunc("POST /auth/login", s.authLogin)
+	mux.HandleFunc("POST /auth/logout", s.authLogout)
+	mux.HandleFunc("GET /auth/me", s.authMe)
+	mux.HandleFunc("POST /auth/sessions/revoke-all", s.authRevokeAll)
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
@@ -202,7 +211,7 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.getProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/start", s.startProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/stop", s.stopProject)
-	return withJSON(mux)
+	return withJSON(s.authMiddleware(mux))
 }
 
 func (s Server) health(w http.ResponseWriter, r *http.Request) {

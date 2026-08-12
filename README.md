@@ -58,6 +58,12 @@ The installer creates `/etc/suda-forge/suda-forge.env` on first run. Review the 
 
 The current phase is intentionally conservative. Project preview routing, public authentication, delegated non-root LXC execution, automatic database provisioning, backups, and deployment rollback remain follow-up production phases. The service template currently runs as root because the LXC permission model has not yet been converted to a delegated service account. Do not expose the installation to untrusted users until the authentication and privilege-separation phases are complete.
 
+## Authentication endpoints
+
+The authentication layer now exposes `GET /auth/status`, `POST /auth/bootstrap`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me`, and `POST /auth/sessions/revoke-all`. All `/api/*` routes require a valid session cookie; health endpoints remain public for service supervision.
+
+The first administrator is created exactly once through `/auth/bootstrap`. Sessions are stored server-side with only a token hash persisted in PostgreSQL. Cookies are HttpOnly, SameSite=Lax, and Secure by default. Set `SUDA_COOKIE_SECURE=false` only for local HTTP development; keep it enabled behind HTTPS in production.
+
 ## Optional local AI runtimes
 
 Configure an existing runtime explicitly before starting the server:
