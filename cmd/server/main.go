@@ -18,6 +18,7 @@ import (
 	"suda-forge/internal/lifecycle"
 	"suda-forge/internal/model"
 	"suda-forge/internal/postgres"
+	"suda-forge/internal/routing"
 )
 
 func main() {
@@ -56,7 +57,17 @@ func main() {
 	agentService := agent.Service{Store: agentStore, Adapters: agentRegistry, Now: time.Now}
 	modelRegistry := model.NewRegistry()
 	_ = modelRegistry.RegisterProvider(agent.Provider{ID: "custom", Name: "Custom", Type: "custom", Status: "AVAILABLE"})
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus(), AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry}
+	_ = modelRegistry.RegisterProvider(agent.Provider{ID: "openai", Name: "OpenAI", Type: "cloud", Status: "AVAILABLE"})
+	_ = modelRegistry.RegisterProvider(agent.Provider{ID: "ollama", Name: "Ollama", Type: "local", Status: "AVAILABLE"})
+	_ = modelRegistry.RegisterModel(agent.Model{ID: "cloud-best", ProviderID: "openai", ModelID: "cloud-best", DisplayName: "Cloud Best", ContextWindow: 128000, Reasoning: true, Coding: true, ToolUse: true, Remote: true})
+	_ = modelRegistry.RegisterModel(agent.Model{ID: "local-code", ProviderID: "ollama", ModelID: "local-code", DisplayName: "Local Code", ContextWindow: 32000, Coding: true, ToolUse: true, Local: true})
+	routingModels := []routing.ModelProfile{
+		{ModelID: "cloud-best", ProviderID: "openai", DisplayName: "Cloud Best", Remote: true, ContextWindow: 128000, Availability: routing.Available, Capabilities: map[routing.Capability]bool{routing.Coding: true, routing.Architecture: true, routing.Reasoning: true, routing.ToolUse: true, routing.LongContext: true}, Performance: routing.PerformanceProfile{CodingScore: 1, ReasoningScore: 1, ReliabilityScore: .95, LatencyClass: "slow"}, Pricing: routing.Pricing{InputCost: 10, OutputCost: 30, Currency: "USD", PricingUnit: "1M tokens", EffectiveDate: time.Now().UTC()}},
+		{ModelID: "local-code", ProviderID: "ollama", DisplayName: "Local Code", Local: true, ContextWindow: 32000, Availability: routing.Available, Capabilities: map[routing.Capability]bool{routing.Coding: true, routing.Backend: true, routing.Reasoning: true, routing.ToolUse: true}, Performance: routing.PerformanceProfile{CodingScore: .7, ReliabilityScore: .8, LatencyClass: "fast"}, Pricing: routing.Pricing{Currency: "USD", PricingUnit: "1M tokens", EffectiveDate: time.Now().UTC()}},
+	}
+	router := routing.NewRouter(nil)
+	routingStore := routing.Store{DB: db}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus(), AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

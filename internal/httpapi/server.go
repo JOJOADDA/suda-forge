@@ -10,6 +10,7 @@ import (
 	"suda-forge/internal/agent"
 	"suda-forge/internal/events"
 	"suda-forge/internal/model"
+	"suda-forge/internal/routing"
 
 	"suda-forge/domain/project"
 	"suda-forge/internal/lifecycle"
@@ -24,6 +25,9 @@ type Server struct {
 	AgentService  *agent.Service
 	AgentRegistry *agent.Registry
 	ModelRegistry *model.Registry
+	Router        *routing.Router
+	RoutingModels []routing.ModelProfile
+	RoutingStore  *routing.Store
 }
 
 func (s Server) Handler() http.Handler {
@@ -38,6 +42,9 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/agents", s.listAgents)
 	mux.HandleFunc("GET /api/providers", s.listProviders)
 	mux.HandleFunc("GET /api/models", s.listModels)
+	mux.HandleFunc("GET /api/models/{id}", s.getModel)
+	mux.HandleFunc("GET /api/providers/{id}", s.getProvider)
+	mux.HandleFunc("POST /api/model-routing/decide", s.decideModel)
 	mux.HandleFunc("GET /api/projects/{project}/agents", s.listAgents)
 	mux.HandleFunc("POST /api/projects/{project}/agent-sessions", s.createAgentSession)
 	mux.HandleFunc("GET /api/projects/{project}/agent-sessions", s.listAgentSessions)
@@ -83,6 +90,54 @@ func (s Server) events(w http.ResponseWriter, r *http.Request) {
 		_, _ = fmt.Fprintf(w, "event: %s\\ndata: %s\\n\\n", event.Type, data)
 		flusher.Flush()
 	}
+}
+
+func (s Server) getProvider(w http.ResponseWriter, r *http.Request) {
+	if s.ModelRegistry == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("model registry unavailable"))
+		return
+	}
+	provider, ok := s.ModelRegistry.Provider(r.PathValue("id"))
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("provider not found"))
+		return
+	}
+	writeJSON(w, http.StatusOK, provider)
+}
+func (s Server) getModel(w http.ResponseWriter, r *http.Request) {
+	if s.ModelRegistry == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("model registry unavailable"))
+		return
+	}
+	item, ok := s.ModelRegistry.Model(r.PathValue("id"))
+	if !ok {
+		writeError(w, http.StatusNotFound, errors.New("model not found"))
+		return
+	}
+	writeJSON(w, http.StatusOK, item)
+}
+func (s Server) decideModel(w http.ResponseWriter, r *http.Request) {
+	if s.Router == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("routing engine unavailable"))
+		return
+	}
+	var request routing.RoutingRequest
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if len(request.Models) == 0 {
+		request.Models = s.RoutingModels
+	}
+	decision, err := s.Router.Decide(request)
+	if s.RoutingStore != nil {
+		_ = s.RoutingStore.SaveDecision(r.Context(), routing.DecisionID(time.Now().UTC()), request, decision)
+	}
+	if err != nil {
+		writeJSON(w, http.StatusUnprocessableEntity, map[string]any{"error": err.Error(), "decision": decision})
+		return
+	}
+	writeJSON(w, http.StatusOK, decision)
 }
 
 func (s Server) listProviders(w http.ResponseWriter, r *http.Request) {
