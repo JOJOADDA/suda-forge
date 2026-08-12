@@ -10,6 +10,7 @@ import (
 	"suda-forge/internal/agent"
 	"suda-forge/internal/events"
 	"suda-forge/internal/model"
+	"suda-forge/internal/orchestration"
 	"suda-forge/internal/routing"
 
 	"suda-forge/domain/project"
@@ -28,6 +29,8 @@ type Server struct {
 	Router        *routing.Router
 	RoutingModels []routing.ModelProfile
 	RoutingStore  *routing.Store
+	Orchestrator  *orchestration.Orchestrator
+	WorkflowStore *orchestration.PostgresStore
 }
 
 func (s Server) Handler() http.Handler {
@@ -45,6 +48,12 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/models/{id}", s.getModel)
 	mux.HandleFunc("GET /api/providers/{id}", s.getProvider)
 	mux.HandleFunc("POST /api/model-routing/decide", s.decideModel)
+	mux.HandleFunc("POST /api/projects/{project}/plans", s.createPlan)
+	mux.HandleFunc("POST /api/projects/{project}/workflows", s.createWorkflow)
+	mux.HandleFunc("GET /api/projects/{project}/workflows/{workflow}", s.getWorkflow)
+	mux.HandleFunc("POST /api/projects/{project}/workflows/{workflow}/cancel", s.cancelWorkflow)
+	mux.HandleFunc("POST /api/projects/{project}/workflows/{workflow}/tasks/{task}/approvals", s.requestApproval)
+	mux.HandleFunc("POST /api/projects/{project}/workflows/{workflow}/approvals/{approval}/resolve", s.resolveApproval)
 	mux.HandleFunc("GET /api/projects/{project}/agents", s.listAgents)
 	mux.HandleFunc("POST /api/projects/{project}/agent-sessions", s.createAgentSession)
 	mux.HandleFunc("GET /api/projects/{project}/agent-sessions", s.listAgentSessions)
@@ -138,6 +147,146 @@ func (s Server) decideModel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, decision)
+}
+
+func (s Server) createPlan(w http.ResponseWriter, r *http.Request) {
+	if s.Orchestrator == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("orchestrator unavailable"))
+		return
+	}
+	var input orchestration.PlannerInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	input.Intent.ProjectID = r.PathValue("project")
+	plan, err := s.Orchestrator.Planner.Plan(input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if _, err = orchestration.ValidatePlan(plan); err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, plan)
+}
+func (s Server) createWorkflow(w http.ResponseWriter, r *http.Request) {
+	if s.Orchestrator == nil || s.WorkflowStore == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("orchestration persistence unavailable"))
+		return
+	}
+	var input orchestration.PlannerInput
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	input.Intent.ProjectID = r.PathValue("project")
+	workflow, err := s.Orchestrator.Plan(input)
+	if err != nil {
+		writeError(w, http.StatusUnprocessableEntity, err)
+		return
+	}
+	if err = s.WorkflowStore.SaveWorkflow(r.Context(), workflow); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if s.Events != nil {
+		s.Events.Publish(events.Event{Type: "workflow.created", ProjectID: workflow.ProjectID, Data: workflow})
+	}
+	writeJSON(w, http.StatusCreated, workflow)
+
+}
+func (s Server) getWorkflow(w http.ResponseWriter, r *http.Request) {
+	if s.WorkflowStore == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("workflow store unavailable"))
+		return
+	}
+	workflow, err := s.WorkflowStore.GetWorkflow(r.Context(), r.PathValue("project"), orchestration.ID(r.PathValue("workflow")))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, workflow)
+}
+func (s Server) cancelWorkflow(w http.ResponseWriter, r *http.Request) {
+	if s.WorkflowStore == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("workflow store unavailable"))
+		return
+	}
+	workflow, err := s.WorkflowStore.GetWorkflow(r.Context(), r.PathValue("project"), orchestration.ID(r.PathValue("workflow")))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	workflow.Status = orchestration.WorkflowCancelled
+	workflow.UpdatedAt = time.Now().UTC()
+	if err = s.WorkflowStore.SaveWorkflow(r.Context(), workflow); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if s.Events != nil {
+		s.Events.Publish(events.Event{Type: "workflow.cancelled", ProjectID: workflow.ProjectID, Data: map[string]any{"workflow_id": workflow.ID}})
+	}
+	writeJSON(w, http.StatusOK, workflow)
+
+}
+
+func (s Server) requestApproval(w http.ResponseWriter, r *http.Request) {
+	if s.WorkflowStore == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("workflow store unavailable"))
+		return
+	}
+	var body struct {
+		Permission string `json:"permission"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	approval := orchestration.Approval{ID: orchestration.ID("approval_" + time.Now().UTC().Format("20060102150405.000000000")), WorkflowID: orchestration.ID(r.PathValue("workflow")), TaskID: orchestration.ID(r.PathValue("task")), Permission: body.Permission, Status: "WAITING_FOR_APPROVAL", RequestedAt: time.Now().UTC()}
+	if err := s.WorkflowStore.SaveApproval(r.Context(), approval); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if s.Events != nil {
+		s.Events.Publish(events.Event{Type: "task.approval_required", ProjectID: r.PathValue("project"), Data: approval})
+	}
+	writeJSON(w, http.StatusCreated, approval)
+}
+func (s Server) resolveApproval(w http.ResponseWriter, r *http.Request) {
+	if s.WorkflowStore == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("workflow store unavailable"))
+		return
+	}
+	var body struct {
+		Approved bool `json:"approved"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	approval, err := s.WorkflowStore.GetApproval(r.Context(), orchestration.ID(r.PathValue("approval")))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if approval.WorkflowID != orchestration.ID(r.PathValue("workflow")) {
+		writeError(w, http.StatusNotFound, errors.New("approval does not belong to workflow"))
+		return
+	}
+	if body.Approved {
+		approval.Status = "APPROVED"
+	} else {
+		approval.Status = "REJECTED"
+	}
+	now := time.Now().UTC()
+	approval.ResolvedAt = &now
+	if err := s.WorkflowStore.SaveApproval(r.Context(), approval); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, approval)
 }
 
 func (s Server) listProviders(w http.ResponseWriter, r *http.Request) {

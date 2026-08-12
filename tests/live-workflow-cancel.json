@@ -1,0 +1,1 @@
+{"id":"wf_1786542523801171516","project_id":"integration_20260812130414.347029027","goal":"Build and verify a small feature","status":"CANCELLED","execution_strategy":"DEPENDENCY_DRIVEN","failure_policy":"CONTINUE_INDEPENDENT","max_parallel_tasks":3,"created_at":"2026-08-12T13:48:43.801171Z","updated_at":"2026-08-12T13:48:43.845301593Z","graph":{"tasks":{},"dependencies":{}}}

@@ -17,6 +17,7 @@ import (
 	"suda-forge/internal/httpapi"
 	"suda-forge/internal/lifecycle"
 	"suda-forge/internal/model"
+	"suda-forge/internal/orchestration"
 	"suda-forge/internal/postgres"
 	"suda-forge/internal/routing"
 )
@@ -67,7 +68,10 @@ func main() {
 	}
 	router := routing.NewRouter(nil)
 	routingStore := routing.Store{DB: db}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus(), AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore}
+	planner := orchestration.DeterministicPlanner{}
+	orchestrator := orchestration.Orchestrator{Planner: planner, Now: time.Now}
+	workflowStore := orchestration.PostgresStore{DB: db}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus(), AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
