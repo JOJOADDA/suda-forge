@@ -211,7 +211,7 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.getProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/start", s.startProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/stop", s.stopProject)
-	return withJSON(s.authMiddleware(mux))
+	return withJSON(s.authMiddleware(s.projectAccessMiddleware(mux)))
 }
 
 func (s Server) health(w http.ResponseWriter, r *http.Request) {
@@ -569,7 +569,12 @@ func (s Server) listAgentEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) listProjects(w http.ResponseWriter, r *http.Request) {
-	items, err := s.Projects.List(r.Context())
+	principal, ok := authPrincipal(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("authentication required"))
+		return
+	}
+	items, err := s.Projects.ListVisible(r.Context(), principal.User.ID, string(principal.User.Role))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
@@ -587,6 +592,15 @@ func (s Server) createProject(w http.ResponseWriter, r *http.Request) {
 	}
 	p, err := s.Lifecycle.Create(r.Context(), input.Name)
 	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	principal, ok := authPrincipal(r.Context())
+	if !ok || s.Auth == nil || s.Auth.Memberships == nil {
+		writeError(w, http.StatusInternalServerError, errors.New("membership service unavailable"))
+		return
+	}
+	if err := s.Auth.Memberships.SetMembership(r.Context(), auth.ProjectMembership{ProjectID: string(p.ID), UserID: principal.User.ID, Role: "owner", CreatedAt: time.Now().UTC(), UpdatedAt: time.Now().UTC()}); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}

@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"suda-forge/internal/aifabric"
+	"suda-forge/internal/auth"
 )
 
 func (s Server) aiRuntimes(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +234,9 @@ func (s Server) aiInference(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, errors.New("project_id is required"))
 		return
 	}
+	if !s.requireProjectPermission(w, r, req.ProjectID, auth.PermissionRun) {
+		return
+	}
 	response, err := s.AIManager.Generate(r.Context(), req)
 	if s.AIStore != nil {
 		status := "COMPLETED"
@@ -255,6 +259,13 @@ func (s Server) aiInferenceStream(w http.ResponseWriter, r *http.Request) {
 	var req aifabric.InferenceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if req.ProjectID == "" {
+		writeError(w, http.StatusBadRequest, errors.New("project_id is required"))
+		return
+	}
+	if !s.requireProjectPermission(w, r, req.ProjectID, auth.PermissionRun) {
 		return
 	}
 	stream, err := s.AIManager.Stream(r.Context(), req)

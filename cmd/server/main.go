@@ -62,7 +62,8 @@ func main() {
 	projects := postgres.Projects{DB: db}
 	userRepository := auth.PostgresUserRepository{DB: db}
 	sessionRepository := auth.PostgresSessionRepository{DB: db}
-	authService := &auth.AuthService{Users: userRepository, Sessions: auth.SessionService{Repository: sessionRepository, Now: time.Now}, Now: time.Now}
+	membershipRepository := auth.PostgresMembershipRepository{DB: db}
+	authService := &auth.AuthService{Users: userRepository, Sessions: auth.SessionService{Repository: sessionRepository, Now: time.Now}, Memberships: membershipRepository, Now: time.Now}
 	lifecycleService := lifecycle.Service{Projects: projects, Runtime: runtimeProvider, Now: time.Now}
 	agentRegistry := agent.NewRegistry()
 	_ = agentRegistry.RegisterDefinition(agent.AgentDefinition{ID: "codex", Name: "codex", DisplayName: "Codex", Adapter: "codex", Status: "AVAILABLE"})

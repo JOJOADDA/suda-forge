@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"suda-forge/internal/auth"
 	"suda-forge/internal/events"
 	"suda-forge/internal/verification"
 )
@@ -22,6 +23,9 @@ func (s Server) createVerification(w http.ResponseWriter, r *http.Request) {
 	}
 	if req.ProjectID == "" {
 		req.ProjectID = r.URL.Query().Get("project_id")
+	}
+	if req.ProjectID == "" || !s.requireProjectPermission(w, r, req.ProjectID, auth.PermissionRun) {
+		return
 	}
 	project := verification.ProjectContext{ProjectID: req.ProjectID, RuntimeID: req.RuntimeID, Workspace: req.Workspace, RuntimeProvider: s.RuntimeProvider}
 	run, err := s.VerificationEngine.Run(r.Context(), req, project)
@@ -45,6 +49,9 @@ func (s Server) getVerification(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, err)
 		return
 	}
+	if !s.requireProjectPermission(w, r, run.ProjectID, auth.PermissionRead) {
+		return
+	}
 	writeJSON(w, http.StatusOK, run)
 }
 func (s Server) taskVerifications(w http.ResponseWriter, r *http.Request) {
@@ -57,11 +64,30 @@ func (s Server) taskVerifications(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, runs)
+	principal, ok := authPrincipal(r.Context())
+	if !ok {
+		writeError(w, http.StatusUnauthorized, errors.New("authentication required"))
+		return
+	}
+	visible := make([]verification.VerificationRun, 0, len(runs))
+	for _, run := range runs {
+		if principal.User.Role == auth.RoleAdmin || s.Auth.RequireProjectAccess(r.Context(), principal.User, run.ProjectID, auth.PermissionRead) == nil {
+			visible = append(visible, run)
+		}
+	}
+	writeJSON(w, http.StatusOK, visible)
 }
 func (s Server) verificationArtifacts(w http.ResponseWriter, r *http.Request) {
 	if s.VerificationStore == nil {
 		writeError(w, http.StatusServiceUnavailable, errors.New("verification store unavailable"))
+		return
+	}
+	run, err := s.VerificationStore.Get(r.Context(), verification.ID(r.PathValue("id")))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if !s.requireProjectPermission(w, r, run.ProjectID, auth.PermissionRead) {
 		return
 	}
 	items, err := s.VerificationStore.Artifacts(r.Context(), verification.ID(r.PathValue("id")))
@@ -79,6 +105,9 @@ func (s Server) cancelVerification(w http.ResponseWriter, r *http.Request) {
 	run, err := s.VerificationStore.Get(r.Context(), verification.ID(r.PathValue("id")))
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if !s.requireProjectPermission(w, r, run.ProjectID, auth.PermissionRun) {
 		return
 	}
 	if run.Status == verification.Pending || run.Status == verification.Running {
@@ -103,6 +132,9 @@ func (s Server) repairVerification(w http.ResponseWriter, r *http.Request) {
 	run, err := s.VerificationStore.Get(r.Context(), verification.ID(r.PathValue("id")))
 	if err != nil {
 		writeError(w, http.StatusNotFound, err)
+		return
+	}
+	if !s.requireProjectPermission(w, r, run.ProjectID, auth.PermissionEdit) {
 		return
 	}
 	if run.Status == verification.Passed {

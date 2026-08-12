@@ -145,3 +145,19 @@ The Phase 10 status report and implementation map are available in [`PHASE10_STA
 ## Out of scope until later phases
 
 RAG, vector databases, model training, fine-tuning, distributed GPU clusters, multi-node inference, Kubernetes, microservices, agent councils, advanced deployment, autonomous maintenance, full IDE replacement, and Phase 11 work are intentionally not implemented.
+
+
+## Project membership and API authorization
+
+بعد تسجيل الدخول، تتم تصفية قائمة المشاريع حسب `project_memberships`، ويُمنح منشئ المشروع دور `owner` تلقائيًا. الأدوار المدعومة حاليًا هي `owner` و`editor` و`runner` و`viewer`، مع نطاق عام لدوري `admin` و`operator`.
+
+| Permission | owner | editor | runner | viewer |
+|---|---:|---:|---:|---:|
+| `project.read` | نعم | نعم | نعم | نعم |
+| `project.edit` | نعم | نعم | لا | لا |
+| `project.run` | نعم | نعم | نعم | لا |
+| `project.deploy` | نعم | لا | لا | لا |
+
+تطبق طبقة الخادم هذه السياسات قبل تنفيذ مسارات المشاريع، Project Computers، Verification، وAI inference. أي طلب دون session يعيد `401 Unauthorized`، وأي مستخدم مصادق عليه دون صلاحية للمشروع يعيد `403 Forbidden`.
+
+مسارات الموارد التي لا تحتوي `project_id` في URL، مثل Project Computer وVerification، تحمّل الكائن أولًا ثم تتحقق من `project_id` المرتبط به قبل إرجاع البيانات أو تنفيذ العملية. لا تعتمد الواجهة على إخفاء الأزرار كحماية؛ القرار الأمني موجود في Backend.

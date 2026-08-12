@@ -133,9 +133,10 @@ func (r PostgresUserRepository) TouchLogin(ctx context.Context, id string, now t
 }
 
 type AuthService struct {
-	Users    UserRepository
-	Sessions SessionService
-	Now      func() time.Time
+	Users       UserRepository
+	Sessions    SessionService
+	Memberships MembershipRepository
+	Now         func() time.Time
 }
 
 func (s AuthService) now() time.Time {

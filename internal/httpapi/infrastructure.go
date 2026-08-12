@@ -2,8 +2,11 @@ package httpapi
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
+
+	"suda-forge/internal/auth"
 
 	"suda-forge/internal/environment"
 	"suda-forge/internal/events"
@@ -15,7 +18,14 @@ func (s Server) listProjectComputers(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "project computer service unavailable"})
 		return
 	}
-	items, err := s.ProjectComputers.List(r.Context(), r.URL.Query().Get("project_id"))
+	projectID := r.URL.Query().Get("project_id")
+	if projectID == "" || !s.requireProjectPermission(w, r, projectID, auth.PermissionRead) {
+		if projectID == "" {
+			writeError(w, http.StatusBadRequest, errors.New("project_id is required"))
+		}
+		return
+	}
+	items, err := s.ProjectComputers.List(r.Context(), projectID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
@@ -34,6 +44,9 @@ func (s Server) createProjectComputer(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if !s.requireProjectPermission(w, r, input.ProjectID, auth.PermissionEdit) {
 		return
 	}
 	if input.Available.CPU == 0 {
@@ -60,31 +73,42 @@ func (s Server) getProjectComputer(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
 		return
 	}
+	if !s.requireProjectPermission(w, r, c.ProjectID, auth.PermissionRead) {
+		return
+	}
 	writeJSON(w, http.StatusOK, c)
 }
 func (s Server) startProjectComputer(w http.ResponseWriter, r *http.Request) {
-	s.lifecycleComputer(w, r, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
+	s.lifecycleComputer(w, r, auth.PermissionRun, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
 		return s.ProjectComputers.Start(r.Context(), id)
 	})
 }
 func (s Server) stopProjectComputer(w http.ResponseWriter, r *http.Request) {
-	s.lifecycleComputer(w, r, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
+	s.lifecycleComputer(w, r, auth.PermissionRun, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
 		return s.ProjectComputers.Stop(r.Context(), id)
 	})
 }
 func (s Server) restartProjectComputer(w http.ResponseWriter, r *http.Request) {
-	s.lifecycleComputer(w, r, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
+	s.lifecycleComputer(w, r, auth.PermissionRun, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
 		return s.ProjectComputers.Restart(r.Context(), id)
 	})
 }
 func (s Server) destroyProjectComputer(w http.ResponseWriter, r *http.Request) {
-	s.lifecycleComputer(w, r, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
+	s.lifecycleComputer(w, r, auth.PermissionEdit, func(id projectcomputer.ID) (projectcomputer.ProjectComputer, error) {
 		return s.ProjectComputers.Destroy(r.Context(), id)
 	})
 }
-func (s Server) lifecycleComputer(w http.ResponseWriter, r *http.Request, fn func(projectcomputer.ID) (projectcomputer.ProjectComputer, error)) {
+func (s Server) lifecycleComputer(w http.ResponseWriter, r *http.Request, permission auth.ProjectPermission, fn func(projectcomputer.ID) (projectcomputer.ProjectComputer, error)) {
 	if s.ProjectComputers == nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "project computer service unavailable"})
+		return
+	}
+	computer, err := s.ProjectComputers.Get(r.Context(), projectcomputer.ID(r.PathValue("id")))
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		return
+	}
+	if !s.requireProjectPermission(w, r, computer.ProjectID, permission) {
 		return
 	}
 	c, err := fn(projectcomputer.ID(r.PathValue("id")))
@@ -106,6 +130,14 @@ func (s Server) verifyProjectComputer(w http.ResponseWriter, r *http.Request) {
 	if len(input.Capabilities) == 0 {
 		input.Capabilities = []projectcomputer.Capability{projectcomputer.Filesystem, projectcomputer.Process, projectcomputer.Git}
 	}
+	computer, err := s.ProjectComputers.Get(r.Context(), projectcomputer.ID(r.PathValue("id")))
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		return
+	}
+	if !s.requireProjectPermission(w, r, computer.ProjectID, auth.PermissionRun) {
+		return
+	}
 	c, err := s.ProjectComputers.Verify(r.Context(), projectcomputer.ID(r.PathValue("id")), input.Capabilities)
 	if err != nil {
 		writeJSON(w, http.StatusConflict, map[string]any{"error": err.Error(), "project_computer": c})
@@ -119,6 +151,14 @@ func (s Server) rebuildProjectComputer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := projectcomputer.ID(r.PathValue("id"))
+	computer, err := s.ProjectComputers.Get(r.Context(), id)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+		return
+	}
+	if !s.requireProjectPermission(w, r, computer.ProjectID, auth.PermissionEdit) {
+		return
+	}
 	if _, err := s.ProjectComputers.Destroy(r.Context(), id); err != nil {
 		writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 		return
