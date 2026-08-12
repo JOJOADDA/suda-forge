@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"suda-forge/adapters/runtimes/lxc"
 	"suda-forge/internal/config"
+	"suda-forge/internal/events"
 	"suda-forge/internal/httpapi"
 	"suda-forge/internal/lifecycle"
 	"suda-forge/internal/postgres"
@@ -42,7 +43,7 @@ func main() {
 	}
 	projects := postgres.Projects{DB: db}
 	lifecycleService := lifecycle.Service{Projects: projects, Runtime: runtimeProvider, Now: time.Now}
-	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService}
+	api := httpapi.Server{Projects: projects, Lifecycle: lifecycleService, Events: events.NewBus()}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {

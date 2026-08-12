@@ -1,0 +1,40 @@
+?   	suda-forge/adapters/runtimes/lxc	[no test files]
+?   	suda-forge/cmd/server	[no test files]
+?   	suda-forge/internal/config	[no test files]
+ok  	suda-forge/domain/project	(cached)
+ok  	suda-forge/internal/auth	(cached)
+ok  	suda-forge/internal/events	(cached)
+?   	suda-forge/internal/lifecycle	[no test files]
+ok  	suda-forge/internal/filesystem	(cached)
+?   	suda-forge/internal/postgres	[no test files]
+?   	suda-forge/internal/httpapi	[no test files]
+?   	suda-forge/internal/services	[no test files]
+?   	suda-forge/internal/terminal	[no test files]
+ok  	suda-forge/internal/runtime	(cached)
+ok  	suda-forge/internal/postgres	(cached)
+vite v8.2.1 building client environment for production...
+[2Ktransforming...[32m✓[0m 17 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[0m[32mindex.html                 [0m[1;2m  0.45 kB[0m[2m │ gzip:  0.29 kB[0m
+[2mdist/[0m[2massets/[0m[35mindex-Dla92iHG.css  [0m[1;2m  5.37 kB[0m[2m │ gzip:  2.03 kB[0m
+[2mdist/[0m[2massets/[0m[36mindex-B2N_nuZi.js   [0m[1;2m194.70 kB[0m[2m │ gzip: 61.61 kB[0m
+
+✓ built in 169ms
+SUDA FORGE Runtime Host Check
+============================
+OS                       PASS
+Kernel                   PASS
+Architecture             PASS
+LXC tools                PASS
+User namespaces          PASS
+SubUID/SubGID            PASS
+Cgroups                  PASS
+Network namespace        PASS
+Storage                  PASS
+Privileges               PASS
+Nested container detection FAIL (nested/restricted: docker)
+LXC network policy       FAIL
+----------------------------
+READY FOR LXC: NO
+Phase 1 verification completed; inspect each command result and runtime-host status separately.

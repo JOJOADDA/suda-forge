@@ -3,16 +3,21 @@ package httpapi
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
+
+	"suda-forge/internal/events"
 
 	"suda-forge/domain/project"
 	"suda-forge/internal/lifecycle"
 	"suda-forge/internal/postgres"
+	"suda-forge/internal/runtime"
 )
 
 type Server struct {
 	Projects  postgres.Projects
 	Lifecycle lifecycle.Service
+	Events    *events.Bus
 }
 
 func (s Server) Handler() http.Handler {
@@ -20,12 +25,48 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})
+	mux.HandleFunc("GET /health", s.health)
+	mux.HandleFunc("GET /ready", s.ready)
+
+	mux.HandleFunc("GET /api/v1/events", s.events)
 	mux.HandleFunc("GET /api/v1/projects", s.listProjects)
 	mux.HandleFunc("POST /api/v1/projects", s.createProject)
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.getProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/start", s.startProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/stop", s.stopProject)
 	return withJSON(mux)
+}
+
+func (s Server) health(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, runtime.HostReadiness())
+}
+func (s Server) ready(w http.ResponseWriter, r *http.Request) {
+	status := runtime.HostReadiness()
+	if status.Runtime != "READY" {
+		writeJSON(w, http.StatusServiceUnavailable, status)
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s Server) events(w http.ResponseWriter, r *http.Request) {
+	if s.Events == nil {
+		http.Error(w, "event stream unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+	for event := range s.Events.Subscribe(r.Context()) {
+		data, _ := json.Marshal(event)
+		_, _ = fmt.Fprintf(w, "event: %s\\ndata: %s\\n\\n", event.Type, data)
+		flusher.Flush()
+	}
 }
 
 func (s Server) listProjects(w http.ResponseWriter, r *http.Request) {

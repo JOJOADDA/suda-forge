@@ -1,0 +1,16 @@
+SUDA FORGE Runtime Host Check
+============================
+OS                       PASS
+Kernel                   PASS
+Architecture             PASS
+LXC tools                PASS
+User namespaces          PASS
+SubUID/SubGID            PASS
+Cgroups                  PASS
+Network namespace        PASS
+Storage                  PASS
+Privileges               PASS
+Nested container detection FAIL (nested/restricted: docker)
+LXC network policy       FAIL
+----------------------------
+READY FOR LXC: NO
