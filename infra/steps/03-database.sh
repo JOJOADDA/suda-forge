@@ -55,18 +55,14 @@ DB_PASSWORD="$(openssl rand -hex 24)"
 DB_URL="postgres://${DB_USER}:${DB_PASSWORD}@127.0.0.1:5432/${DB_NAME}?sslmode=disable"
 
 log "creating PostgreSQL role and database"
-pg_as_postgres psql -v ON_ERROR_STOP=1 \
-  -v db_user="$DB_USER" -v db_password="$DB_PASSWORD" -v db_name="$DB_NAME" <<'SQL'
-DO $do$
-BEGIN
-  IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = :'db_user') THEN
-    EXECUTE format('CREATE ROLE %I LOGIN PASSWORD %L', :'db_user', :'db_password');
-  ELSE
-    EXECUTE format('ALTER ROLE %I LOGIN PASSWORD %L', :'db_user', :'db_password');
-  END IF;
-END
-$do$;
-SQL
+role_exists="$(pg_as_postgres psql -tAc "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = '$DB_USER'" | tr -d '[:space:]')"
+if [ "$role_exists" = "1" ]; then
+  pg_as_postgres psql -v ON_ERROR_STOP=1 \
+    -c "ALTER ROLE \"$DB_USER\" LOGIN PASSWORD '$DB_PASSWORD';"
+else
+  pg_as_postgres psql -v ON_ERROR_STOP=1 \
+    -c "CREATE ROLE \"$DB_USER\" LOGIN PASSWORD '$DB_PASSWORD';"
+fi
 
 if ! pg_as_postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" | grep -q 1; then
   pg_as_postgres createdb -O "$DB_USER" "$DB_NAME"
