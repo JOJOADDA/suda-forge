@@ -115,3 +115,48 @@ infra/check-network-and-push.sh --fix-dns --push
 ```
 
 السكربت لا يتجاوز أخطاء DNS أو HTTPS ولا ينفذ `git push` عند فشل الفحوصات. كما أن DNS قد يكون محجوبًا من بيئة التشغيل نفسها؛ في هذه الحالة لا يستطيع أي سكربت محلي إصلاح الحجب الخارجي، ويجب تغيير الشبكة أو إعدادات الـ runner أو تنفيذ الأمر من خادم يملك اتصالًا خارجيًا.
+
+
+## One-command bootstrap installation
+
+يستطيع SUDA FORGE الآن البدء من خادم Ubuntu/Debian نظيف عبر Bootstrap Installer. بعد إنشاء سجل `A` في DNS، استخدم:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JOJOADDA/suda-forge/main/infra/bootstrap-install.sh \
+  | sudo bash -s -- suda.example.com
+```
+
+يفضل في الإنتاج استخدام tag أو commit ثابت بدل `main`:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JOJOADDA/suda-forge/<RELEASE_TAG>/infra/bootstrap-install.sh \
+  | sudo bash -s -- suda.example.com
+```
+
+Bootstrap ينفذ الخطوات التالية: clone أو تحديث checkout، تثبيت host dependencies، تثبيت Caddy وLXC افتراضيًا، فحص hostname وDNS، تثبيت PostgreSQL، إنشاء role/database و`DATABASE_URL` عشوائي، تطبيق migrations، بناء الواجهة والـ Go binary، تثبيت systemd وCaddy، ثم health gate.
+
+يمكن التحكم في التثبيت:
+
+```bash
+# أثناء انتظار انتشار DNS فقط
+curl -fsSL https://raw.githubusercontent.com/JOJOADDA/suda-forge/main/infra/bootstrap-install.sh \
+  | sudo bash -s -- suda.example.com --skip-dns-check
+
+# تثبيت التطبيق دون تهيئة LXC أو Caddy
+curl -fsSL https://raw.githubusercontent.com/JOJOADDA/suda-forge/main/infra/bootstrap-install.sh \
+  | sudo bash -s -- suda.example.com --skip-lxc --skip-caddy
+
+# تغيير أسماء قاعدة البيانات وrole
+curl -fsSL https://raw.githubusercontent.com/JOJOADDA/suda-forge/main/infra/bootstrap-install.sh \
+  | sudo bash -s -- suda.example.com --db-name my_suda --db-user my_suda
+```
+
+يجب إعداد سجل DNS الخارجي قبل الأمر:
+
+```text
+A  suda.example.com  →  PUBLIC_SERVER_IPV4
+```
+
+ولا ينشئ Bootstrap سجل Cloudflare تلقائيًا؛ بل يتحقق من أن السجل موجود ويشير إلى الخادم. كما يجب فتح المنفذين 80 و443 في cloud firewall وUFW. ملف البيئة النهائي يحفظ في `/etc/suda-forge/suda-forge.env` بصلاحيات 0600، وقيمة `SUDA_COOKIE_SECURE=true` هي الافتراضية.
+
+لأسباب أمنية، لا يعيد Bootstrap طباعة `DATABASE_URL` أو كلمة مرور PostgreSQL. يجب حفظ نسخة احتياطية من `/etc/suda-forge/suda-forge.env` وفق سياسة الأسرار قبل تشغيل النظام.
