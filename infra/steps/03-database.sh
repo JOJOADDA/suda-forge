@@ -17,12 +17,20 @@ mkdir -p "$ENV_DIR"
 chmod 0750 "$ENV_DIR"
 umask 077
 
-if ! command -v psql >/dev/null 2>&1 || ! command -v pg_isready >/dev/null 2>&1; then
-  log "installing PostgreSQL server"
+postgres_service_present=0
+if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files postgresql.service 2>/dev/null | grep -q '^postgresql\.service'; then
+  postgres_service_present=1
+fi
+
+if [ "$postgres_service_present" -eq 0 ]; then
+  log "installing PostgreSQL server (client tools are not sufficient)"
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
   apt-get install -y -qq postgresql postgresql-contrib postgresql-client
 fi
+
+command -v psql >/dev/null 2>&1 || fail "psql is not installed after PostgreSQL setup"
+command -v pg_isready >/dev/null 2>&1 || fail "pg_isready is not installed after PostgreSQL setup"
 
 systemctl enable --now postgresql
 for _ in $(seq 1 30); do
