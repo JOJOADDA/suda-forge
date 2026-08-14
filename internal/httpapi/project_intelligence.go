@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"suda-forge/internal/auth"
 	"suda-forge/internal/environment"
 	"suda-forge/internal/events"
 	"suda-forge/internal/projectintelligence"
@@ -111,8 +112,7 @@ func (s Server) planProvisioning(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, run)
 }
 func (s Server) startProvisioning(w http.ResponseWriter, r *http.Request) {
-	if s.Provisioning == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "provisioning unavailable"})
+	if _, ok := s.requireProvisioningAccess(w, r, auth.PermissionRun); !ok {
 		return
 	}
 	run, err := s.Provisioning.Provision(r.Context(), provisioning.ID(r.PathValue("run")))
@@ -123,24 +123,14 @@ func (s Server) startProvisioning(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, run)
 }
 func (s Server) getProvisioning(w http.ResponseWriter, r *http.Request) {
-	if s.Provisioning == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "provisioning unavailable"})
-		return
-	}
-	if s.Provisioning.Store == nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": "provisioning persistence unavailable"})
-		return
-	}
-	run, err := s.Provisioning.Store.Get(r.Context(), provisioning.ID(r.PathValue("run")))
-	if err != nil {
-		writeJSON(w, http.StatusNotFound, map[string]string{"error": err.Error()})
+	run, ok := s.requireProvisioningAccess(w, r, auth.PermissionRead)
+	if !ok {
 		return
 	}
 	writeJSON(w, http.StatusOK, run)
 }
 func (s Server) cancelProvisioning(w http.ResponseWriter, r *http.Request) {
-	if s.Provisioning == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "provisioning unavailable"})
+	if _, ok := s.requireProvisioningAccess(w, r, auth.PermissionRun); !ok {
 		return
 	}
 	run, err := s.Provisioning.RequestCancel(r.Context(), provisioning.ID(r.PathValue("run")))
@@ -151,8 +141,7 @@ func (s Server) cancelProvisioning(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusAccepted, run)
 }
 func (s Server) resumeProvisioning(w http.ResponseWriter, r *http.Request) {
-	if s.Provisioning == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "provisioning unavailable"})
+	if _, ok := s.requireProvisioningAccess(w, r, auth.PermissionRun); !ok {
 		return
 	}
 	run, err := s.Provisioning.Resume(r.Context(), provisioning.ID(r.PathValue("run")))
@@ -163,8 +152,7 @@ func (s Server) resumeProvisioning(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, run)
 }
 func (s Server) cleanupProvisioning(w http.ResponseWriter, r *http.Request) {
-	if s.Provisioning == nil {
-		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "provisioning unavailable"})
+	if _, ok := s.requireProvisioningAccess(w, r, auth.PermissionRun); !ok {
 		return
 	}
 	if err := s.Provisioning.Cleanup(r.Context(), provisioning.ID(r.PathValue("run"))); err != nil {

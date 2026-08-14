@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"suda-forge/internal/auth"
+	"suda-forge/internal/provisioning"
 )
 
 func (s Server) requireProjectPermission(w http.ResponseWriter, r *http.Request, projectID string, permission auth.ProjectPermission) bool {
@@ -23,6 +24,22 @@ func (s Server) requireProjectPermission(w http.ResponseWriter, r *http.Request,
 		return false
 	}
 	return true
+}
+
+func (s Server) requireProvisioningAccess(w http.ResponseWriter, r *http.Request, permission auth.ProjectPermission) (provisioning.Run, bool) {
+	if s.Provisioning == nil || s.Provisioning.Store == nil {
+		writeError(w, http.StatusServiceUnavailable, errors.New("provisioning persistence unavailable"))
+		return provisioning.Run{}, false
+	}
+	run, err := s.Provisioning.Store.Get(r.Context(), provisioning.ID(r.PathValue("run")))
+	if err != nil {
+		writeError(w, http.StatusNotFound, err)
+		return provisioning.Run{}, false
+	}
+	if !s.requireProjectPermission(w, r, run.ProjectID, permission) {
+		return provisioning.Run{}, false
+	}
+	return run, true
 }
 
 func (s Server) projectAccessMiddleware(next http.Handler) http.Handler {
