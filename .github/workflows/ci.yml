@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install frontend dependencies
+        run: pnpm --dir apps/web install --frozen-lockfile
+
+      - name: Check formatting
+        run: test -z "$(gofmt -l .)"
+
+      - name: Go tests
+        run: go test ./...
+
+      - name: Frontend build
+        run: pnpm --dir apps/web build
+
+      - name: Frontend/backend contract audit
+        run: node scripts/frontend_backend_contract_audit.mjs
+
+      - name: Deployment delivery test
+        run: bash infra/tests/production-delivery-test.sh
+
+      - name: Git diff check
+        run: git diff --check
