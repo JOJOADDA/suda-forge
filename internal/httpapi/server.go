@@ -211,7 +211,7 @@ func (s Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/v1/projects/{id}", s.getProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/start", s.startProject)
 	mux.HandleFunc("POST /api/v1/projects/{id}/stop", s.stopProject)
-	return withJSON(s.authMiddleware(s.projectAccessMiddleware(mux)))
+	return securityHeaders(sameOriginGuard(withJSON(s.authMiddleware(s.projectAccessMiddleware(mux)))))
 }
 
 func (s Server) health(w http.ResponseWriter, r *http.Request) {

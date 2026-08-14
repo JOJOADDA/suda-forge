@@ -86,6 +86,9 @@ func (s Server) authStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) authBootstrap(w http.ResponseWriter, r *http.Request) {
+	if !enforceRateLimit(w, bootstrapLimiter, remoteIP(r)) {
+		return
+	}
 	if s.Auth == nil {
 		writeError(w, http.StatusServiceUnavailable, errors.New("authentication service unavailable"))
 		return
@@ -118,6 +121,9 @@ func (s Server) authBootstrap(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s Server) authLogin(w http.ResponseWriter, r *http.Request) {
+	if !enforceRateLimit(w, loginLimiter, remoteIP(r)) {
+		return
+	}
 	if s.Auth == nil {
 		writeError(w, http.StatusServiceUnavailable, errors.New("authentication service unavailable"))
 		return

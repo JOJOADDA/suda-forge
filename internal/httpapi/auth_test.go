@@ -129,3 +129,54 @@ func TestAuthMiddlewareAndSessionEndpoints(t *testing.T) {
 		t.Fatalf("me after logout status = %d, want 401", afterLogout.Code)
 	}
 }
+
+func TestSecurityHeadersAndSameOriginGuard(t *testing.T) {
+	handler := securityHeaders(sameOriginGuard(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	})))
+
+	crossOrigin := httptest.NewRequest(http.MethodPost, "/api/example", nil)
+	crossOrigin.Host = "forge.example.com"
+	crossOrigin.Header.Set("Origin", "https://evil.example.com")
+	crossResponse := httptest.NewRecorder()
+	handler.ServeHTTP(crossResponse, crossOrigin)
+	if crossResponse.Code != http.StatusForbidden {
+		t.Fatalf("cross-origin status = %d, want 403", crossResponse.Code)
+	}
+	if crossResponse.Header().Get("X-Content-Type-Options") != "nosniff" || crossResponse.Header().Get("X-Frame-Options") != "DENY" {
+		t.Fatalf("security headers missing: %v", crossResponse.Header())
+	}
+
+	sameOrigin := httptest.NewRequest(http.MethodPost, "/api/example", nil)
+	sameOrigin.Host = "forge.example.com"
+	sameOrigin.Header.Set("Origin", "http://forge.example.com")
+	sameResponse := httptest.NewRecorder()
+	handler.ServeHTTP(sameResponse, sameOrigin)
+	if sameResponse.Code != http.StatusNoContent {
+		t.Fatalf("same-origin status = %d, want 204", sameResponse.Code)
+	}
+
+	cliRequest := httptest.NewRequest(http.MethodPost, "/api/example", nil)
+	cliResponse := httptest.NewRecorder()
+	handler.ServeHTTP(cliResponse, cliRequest)
+	if cliResponse.Code != http.StatusNoContent {
+		t.Fatalf("origin-less client status = %d, want 204", cliResponse.Code)
+	}
+}
+
+func TestFixedWindowLimiter(t *testing.T) {
+	limiter := newFixedWindowLimiter(2, time.Minute)
+	now := time.Date(2026, time.August, 12, 10, 0, 0, 0, time.UTC)
+	if ok, _ := limiter.allow("ip", now); !ok {
+		t.Fatal("first request unexpectedly rejected")
+	}
+	if ok, _ := limiter.allow("ip", now); !ok {
+		t.Fatal("second request unexpectedly rejected")
+	}
+	if ok, retry := limiter.allow("ip", now); ok || retry <= 0 {
+		t.Fatalf("third request = ok:%v retry:%v, want rejection with retry", ok, retry)
+	}
+	if ok, _ := limiter.allow("ip", now.Add(time.Minute)); !ok {
+		t.Fatal("request after window unexpectedly rejected")
+	}
+}
