@@ -4,6 +4,7 @@ import './App.css'
 import { ProductExperiencePanel } from './features/productexperience/ProductExperiencePanel'
 import { ProjectProvisioningWizard } from './features/project/ProjectProvisioningWizard'
 import { ProjectMembersPanel } from './features/project/ProjectMembersPanel'
+import { ProjectAuditPanel } from './features/project/ProjectAuditPanel'
 import { WorkspaceNavigation } from './features/navigation/WorkspaceNavigation'
 import { AuthPanel, type AuthState, type AuthUser } from './features/auth/AuthPanel'
 
@@ -169,6 +170,7 @@ export default function App() {
       {projects.length === 0 && <div className="empty"><strong>لا توجد مشاريع بعد.</strong><span>أنشئ hello-world لبدء أول vertical slice حقيقي.</span></div>}
     </section>
     <ProjectMembersPanel api={API} projectId={selectedProject} currentUserId={currentUser?.id} globalRole={currentUser?.global_role} />
+    <ProjectAuditPanel api={API} projectId={selectedProject} />
     <section id="agents" className="workspace agent-surface"><div className="section-title"><div><span className="eyebrow">AGENT FABRIC / NORMALIZED EVENTS</span><h3>Agent Session</h3></div><span>{session?.status ?? 'لا توجد جلسة'}</span></div>
       <div className="worker-grid">{agents.length ? agents.map((agent) => <article className="worker-card" key={agent.id}><div className="card-top"><span className={`status status-${agent.status.toLowerCase()}`} />{agent.display_name}</div><p>{session?.agent_id === agent.id ? session.status : agent.status}</p><span className="muted">{session?.agent_id === agent.id ? `runtime ${session.runtime_id}` : agent.adapter}</span><div className="capabilities"><span>policy guarded</span><span>{session?.agent_id === agent.id ? `${agentEvents.length} events` : 'idle'}</span><span>{verification?.status ?? 'verification pending'}</span></div></article>) : <div className="empty"><strong>No registered agents</strong><span>Agent adapters are loaded from the backend registry.</span></div>}</div>
       <form onSubmit={createAgentSession} className="agent-controls"><select value={selectedProject} onChange={(e) => setSelectedProject(e.target.value)}><option value="">اختر المشروع</option>{projects.map((project) => <option key={project.id} value={project.id}>{project.name}</option>)}</select><select value={selectedAgent} onChange={(e) => setSelectedAgent(e.target.value)}>{agents.length ? agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.display_name}</option>) : <option value="codex">Codex</option>}</select><button disabled={!selectedProject}>Create session</button></form>
