@@ -9,6 +9,7 @@ import (
 
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
+	"suda-forge/internal/audit"
 	"suda-forge/internal/auth"
 	"suda-forge/internal/constitution"
 	"suda-forge/internal/deployment"
@@ -76,6 +77,7 @@ type Server struct {
 	Constitutions       map[string]constitution.Constitution
 	ConstitutionStore   *constitution.PostgresStore
 	ActivityLog         *productexperience.ActivityLog
+	AuditStore          audit.Store
 	VisualQA            productexperience.VisualQABoundary
 }
 
@@ -144,6 +146,7 @@ func (s Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /api/projects/{project}/activity", s.getProjectActivity)
 	mux.HandleFunc("GET /api/projects/{project}/activity/stream", s.projectActivityStream)
+	mux.HandleFunc("GET /api/projects/{project}/audit", s.listProjectAudit)
 	mux.HandleFunc("GET /api/projects/{project}/members", s.listProjectMembers)
 	mux.HandleFunc("PUT /api/projects/{project}/members/{user}", s.setProjectMember)
 	mux.HandleFunc("DELETE /api/projects/{project}/members/{user}", s.removeProjectMember)

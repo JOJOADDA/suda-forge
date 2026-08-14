@@ -14,6 +14,7 @@ import (
 	"suda-forge/adapters/runtimes/lxc"
 	"suda-forge/internal/agent"
 	"suda-forge/internal/aifabric"
+	"suda-forge/internal/audit"
 	"suda-forge/internal/auth"
 	"suda-forge/internal/config"
 	"suda-forge/internal/constitution"
@@ -204,9 +205,9 @@ func main() {
 		}
 	}()
 	activityLog := productexperience.NewActivityLog(time.Now)
-	activityLog.Store = productStore
+	auditStore := audit.PostgresStore{DB: db}
 	go forwardProductActivity(context.Background(), eventBus, activityLog)
-	api := httpapi.Server{Auth: authService, AuthCookieSecure: cfg.AuthCookieSecure, Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: designSystems, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, ProductStore: &productStore, LoopCoordinator: loopCoordinator, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
+	api := httpapi.Server{Auth: authService, AuthCookieSecure: cfg.AuthCookieSecure, Projects: projects, Lifecycle: lifecycleService, Events: eventBus, AgentService: &agentService, AgentRegistry: agentRegistry, ModelRegistry: modelRegistry, Router: &router, RoutingModels: routingModels, RoutingStore: &routingStore, Orchestrator: &orchestrator, WorkflowStore: &workflowStore, VerificationStore: &verificationStore, VerificationEngine: verificationEngine, RepairLoop: repairLoop, RuntimeProvider: runtimeProvider, AIManager: aiManager, AIStore: &aiStore, DeploymentManager: deploymentManager, DeploymentStore: &deploymentStore, ServiceDiscovery: serviceDiscovery, PortRegistry: portRegistry, ProxyProvider: deployment.CaddyProxy{AdminURL: cfg.CaddyAdminURL}, Infrastructure: infrastructureCatalog, Intelligence: intelligenceEngine, IntelligenceStore: intelligenceStore, EnvironmentStore: environmentStore, Provisioning: provisioningManager, ProjectComputers: projectComputerManager, ToolRegistry: toolRegistry, GlobalCache: globalCache, EnvironmentResolver: environmentResolver, DesignIntelligence: designEngine, DesignStore: &designStore, DesignSystems: designSystems, KnowledgeStore: knowledgeStore, ProductExperience: productExperience, ProductStore: &productStore, LoopCoordinator: loopCoordinator, Constitutions: constitutions, ConstitutionStore: &constitutionStore, ActivityLog: activityLog, AuditStore: auditStore, VisualQA: productexperience.VisualQABoundary{Computers: projectComputerManager}}
 
 	server := &http.Server{Addr: cfg.HTTPAddr, Handler: api.Handler(), ReadHeaderTimeout: 10 * time.Second}
 	go func() {
