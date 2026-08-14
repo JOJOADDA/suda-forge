@@ -144,6 +144,9 @@ func (s Server) Handler() http.Handler {
 
 	mux.HandleFunc("GET /api/projects/{project}/activity", s.getProjectActivity)
 	mux.HandleFunc("GET /api/projects/{project}/activity/stream", s.projectActivityStream)
+	mux.HandleFunc("GET /api/projects/{project}/members", s.listProjectMembers)
+	mux.HandleFunc("PUT /api/projects/{project}/members/{user}", s.setProjectMember)
+	mux.HandleFunc("DELETE /api/projects/{project}/members/{user}", s.removeProjectMember)
 	mux.HandleFunc("POST /api/projects/{project}/visual-qa", s.runVisualQA)
 
 	mux.HandleFunc("POST /api/projects/{project}/plans", s.createPlan)

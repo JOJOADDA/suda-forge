@@ -26,10 +26,23 @@ type ProjectMembership struct {
 	UpdatedAt time.Time
 }
 
+type ProjectMember struct {
+	ProjectID   string    `json:"project_id"`
+	UserID      string    `json:"user_id"`
+	Email       string    `json:"email"`
+	DisplayName string    `json:"display_name"`
+	Role        string    `json:"role"`
+	Status      string    `json:"status"`
+	CreatedAt   time.Time `json:"created_at"`
+	UpdatedAt   time.Time `json:"updated_at"`
+}
+
 type MembershipRepository interface {
 	GetMembership(ctx context.Context, projectID, userID string) (ProjectMembership, error)
 	SetMembership(ctx context.Context, membership ProjectMembership) error
 	ListProjectIDs(ctx context.Context, userID string) ([]string, error)
+	ListProjectMembers(ctx context.Context, projectID string) ([]ProjectMember, error)
+	RemoveMembership(ctx context.Context, projectID, userID string) error
 }
 
 var ErrMembershipNotFound = errors.New("project membership not found")
@@ -64,6 +77,50 @@ func (r PostgresMembershipRepository) SetMembership(ctx context.Context, members
 		ON CONFLICT (project_id, user_id) DO UPDATE SET role=$3, updated_at=$4
 	`, membership.ProjectID, membership.UserID, membership.Role, membership.CreatedAt)
 	return err
+}
+
+func (r PostgresMembershipRepository) ListProjectMembers(ctx context.Context, projectID string) ([]ProjectMember, error) {
+	if r.DB == nil {
+		return nil, errors.New("database pool is required")
+	}
+	rows, err := r.DB.Query(ctx, `
+		SELECT pm.project_id, pm.user_id, u.email, u.display_name, pm.role, u.status, pm.created_at, pm.updated_at
+		FROM project_memberships pm
+		JOIN users u ON u.id = pm.user_id
+		WHERE pm.project_id=$1
+		ORDER BY CASE pm.role WHEN 'owner' THEN 0 WHEN 'editor' THEN 1 WHEN 'runner' THEN 2 ELSE 3 END, lower(u.email)
+	`, projectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var members []ProjectMember
+	for rows.Next() {
+		var member ProjectMember
+		if err := rows.Scan(&member.ProjectID, &member.UserID, &member.Email, &member.DisplayName, &member.Role, &member.Status, &member.CreatedAt, &member.UpdatedAt); err != nil {
+			return nil, err
+		}
+		members = append(members, member)
+	}
+	return members, rows.Err()
+}
+
+func (r PostgresMembershipRepository) RemoveMembership(ctx context.Context, projectID, userID string) error {
+	if r.DB == nil {
+		return errors.New("database pool is required")
+	}
+	result, err := r.DB.Exec(ctx, `
+		DELETE FROM project_memberships pm
+		WHERE pm.project_id=$1 AND pm.user_id=$2
+		AND NOT (pm.role='owner' AND (SELECT COUNT(*) FROM project_memberships WHERE project_id=$1 AND role='owner') <= 1)
+	`, projectID, userID)
+	if err != nil {
+		return err
+	}
+	if result.RowsAffected() == 0 {
+		return ErrMembershipNotFound
+	}
+	return nil
 }
 
 func (r PostgresMembershipRepository) ListProjectIDs(ctx context.Context, userID string) ([]string, error) {
